@@ -1,0 +1,23 @@
+{
+  "name": "my-project-vault",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Knowledge vault — Layer 3 automation triggers (ingest, sync, lint, generate)",
+  "scripts": {
+    "ingest": "node agent_skills/ingest_codebase.js",
+    "sync-drive": "bash agent_skills/sync_drive.sh",
+    "lint-specs": "bash agent_skills/lint_specs.sh",
+    "audit-links": "node agent_skills/audit_links.js",
+    "generate-graph": "node agent_skills/generate_mermaid.js",
+    "code-graph": "bash agent_skills/run_gitnexus.sh",
+    "index-vault": "node agent_skills/build_vault_index.js",
+    "stats": "node agent_skills/vault_stats.js",
+    "validate": "npm run lint-specs && npm run audit-links && echo 'Vault integrity OK'"
+  },
+  "keywords": ["obsidian", "claude-code", "ts-morph", "knowledge-vault"],
+  "author": "captainnhatmoc@gmail.com",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "ts-morph": "^24.0.0"
+  }
+}

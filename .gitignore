@@ -1,0 +1,45 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor scratch
+*.swp
+*.tmp
+
+# Node
+**/node_modules/
+
+# Layer 1 — code mounted, không commit nội dung repo con
+01_Raw/codebase/*/.gitnexus/
+01_Raw/codebase/*/node_modules/
+01_Raw/codebase/*/dist/
+01_Raw/codebase/*/.next/
+01_Raw/codebase/*/coverage/
+01_Raw/codebase/*/dump.rdb
+01_Raw/codebase/*/.env
+01_Raw/codebase/*/.env.local
+
+# Layer 3 — runtime
+System/node_modules/
+System/*.log
+
+# Auto-gen RAG index (rebuild bằng `npm run index-vault`)
+02_Wiki/00_Dashboard/Vault_Index.json
+
+# Obsidian per-user
+.obsidian/workspace*.json
+.obsidian/cache/
+
+# Obsidian plugin binaries — team tự cài qua UI, chỉ commit data.json (settings)
+.obsidian/plugins/*/main.js
+.obsidian/plugins/*/styles.css
+.obsidian/plugins/*/manifest.json
+# (giữ lại data.json để chia sẻ cấu hình)
+!.obsidian/plugins/*/data.json
+
+# File rác Obsidian
+Untitled.base
+Untitled.md
+
+# NOTE: 02_Wiki/05_Code_Graph/ ĐƯỢC commit (theo quyết định team) để
+# người mở Obsidian không cần cài gitnexus.

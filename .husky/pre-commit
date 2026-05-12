@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+# pre-commit — chạy lint + audit-links nếu có file .md trong 02_Wiki/ thay đổi.
+
+VAULT_ROOT="$(git rev-parse --show-toplevel)"
+
+# Nếu không có file .md trong 02_Wiki/ staged → skip
+if ! git diff --cached --name-only --diff-filter=ACM | grep -qE '^02_Wiki/.*\.md$'; then
+  exit 0
+fi
+
+echo "🪝 pre-commit: kiểm tra wiki..."
+
+cd "$VAULT_ROOT/System" || exit 1
+
+bash agent_skills/lint_specs.sh   || { echo "❌ lint-specs fail"; exit 1; }
+node agent_skills/audit_links.js  || { echo "❌ audit-links fail"; exit 1; }
+
+echo "✅ wiki checks pass"

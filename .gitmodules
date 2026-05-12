@@ -1,0 +1,6 @@
+[submodule "01_Raw/codebase/angular-frontend"]
+	path = 01_Raw/codebase/angular-frontend
+	url = git@github.com-mr-siro:mr-siro/laptop-shop-angular.git
+[submodule "01_Raw/codebase/nestjs-backend"]
+	path = 01_Raw/codebase/nestjs-backend
+	url = git@github.com-mr-siro:mr-siro/laptop-shop.git

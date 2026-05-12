@@ -1,0 +1,39 @@
+name: Wiki CI
+
+on:
+  pull_request:
+    paths:
+      - "02_Wiki/**"
+      - "System/**"
+      - ".github/workflows/wiki-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "02_Wiki/**"
+      - "System/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install System deps
+        run: npm install --prefix System --ignore-scripts
+
+      - name: Lint frontmatter
+        run: bash System/agent_skills/lint_specs.sh
+
+      - name: Audit wikilinks
+        run: node System/agent_skills/audit_links.js
+
+      - name: Build vault index (dry-run check)
+        run: node System/agent_skills/build_vault_index.js
+
+      - name: Stats (info only)
+        run: node System/agent_skills/vault_stats.js
+        continue-on-error: true

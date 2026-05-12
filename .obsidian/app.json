@@ -1,0 +1,11 @@
+{
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "defaultViewMode": "preview",
+  "livePreview": true,
+  "promptDelete": false,
+  "showLineNumber": true,
+  "readableLineLength": true,
+  "attachmentFolderPath": "01_Raw"
+}
