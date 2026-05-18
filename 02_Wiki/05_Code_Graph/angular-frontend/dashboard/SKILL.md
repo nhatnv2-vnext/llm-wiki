@@ -1,6 +1,6 @@
 ---
 name: dashboard
-description: "Skill for the Dashboard area of angular-frontend. 3 symbols across 1 files."
+description: "Skill for the Dashboard area of laptop-shop-angular. 3 symbols across 1 files."
 ---
 
 # Dashboard

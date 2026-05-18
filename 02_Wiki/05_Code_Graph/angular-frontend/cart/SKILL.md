@@ -1,6 +1,6 @@
 ---
 name: cart
-description: "Skill for the Cart area of angular-frontend. 14 symbols across 1 files."
+description: "Skill for the Cart area of laptop-shop-angular. 14 symbols across 1 files."
 ---
 
 # Cart

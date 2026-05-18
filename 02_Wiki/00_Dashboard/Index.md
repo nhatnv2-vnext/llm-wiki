@@ -40,6 +40,10 @@ tags:
 
 ## 🕸 Code Graph (GitNexus)
 - [[05_Code_Graph/README|Code Graph index]] — Skill markdown sinh tự động bằng `gitnexus analyze --skills`
+- **Web UI** (Recommended):
+  1. `npm --prefix System run code-graph:serve` → mở server `http://localhost:4747`
+  2. Truy cập [gitnexus.vercel.app](https://gitnexus.vercel.app) — tự detect server local, hiện graph 3D
+- **Web UI offline**: `npm run code-graph:zip` rồi upload ZIP `/tmp/<project>-gitnexus.zip` vào trang web
 
 ## 🤖 LLM / RAG
 - Slash command `/ask-vault` (Claude Code): `.claude/skills/ask-vault/SKILL.md` — chạy `claude` từ trong vault để skill được load

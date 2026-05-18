@@ -4,7 +4,7 @@ type: architecture
 source:
   - 01_Raw/codebase/nestjs-backend
 status: draft
-last_synced: 2026-05-12
+last_synced: 2026-05-18
 tags: [code-graph, gitnexus, nestjs-backend]
 ---
 

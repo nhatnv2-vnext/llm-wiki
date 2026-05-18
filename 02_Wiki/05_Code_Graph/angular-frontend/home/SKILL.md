@@ -1,6 +1,6 @@
 ---
 name: home
-description: "Skill for the Home area of angular-frontend. 4 symbols across 1 files."
+description: "Skill for the Home area of laptop-shop-angular. 4 symbols across 1 files."
 ---
 
 # Home

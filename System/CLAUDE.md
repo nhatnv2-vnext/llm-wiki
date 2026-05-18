@@ -112,6 +112,28 @@ GitNexus chỉ là **tool**, không phải nội dung vault.
 - **Output**: chỉ file `.md` mới được copy sang `02_Wiki/05_Code_Graph/<project>/`. Wrapper trong `System/agent_skills/run_gitnexus.sh`.
 - Index nội bộ của GitNexus (LadybugDB) nằm ở `01_Raw/codebase/<project>/.gitnexus/` — không đồng bộ ngược, không edit.
 
+#### Web UI 3D graph — 2 cách
+
+**A. Local serve (Recommended — nhanh, không upload)**
+1. Index 1 lần: `npm --prefix System run code-graph`
+2. Khởi động HTTP server: `npm --prefix System run code-graph:serve`
+   → server listen ở `http://localhost:4747` (IPv6 `::1`).
+3. Mở https://gitnexus.vercel.app trong browser. Web UI tự detect server local (qua `Access-Control-Allow-Private-Network`) và list các repo đã index.
+4. Click repo → graph 3D + GraphRAG chat hiện ra.
+5. Dừng server bằng Ctrl-C (hoặc `kill <pid>`).
+
+**B. Upload ZIP (khi không muốn chạy server)**
+- Tạo ZIP gọn:
+  ```bash
+  npm --prefix System run code-graph:zip                # zip tất cả
+  npm --prefix System run code-graph:zip nestjs-backend # zip 1 project
+  ```
+- Drag-drop file `/tmp/<project>-gitnexus.zip` vào https://gitnexus.vercel.app
+
+**Lưu ý chung**:
+- Chat GraphRAG cần API key (OpenAI/Anthropic) — KHÔNG đưa secret vào prompt vì câu hỏi gửi tới LLM.
+- Index nội bộ ở `01_Raw/codebase/<project>/.gitnexus/` (đã `.gitignore`) → mỗi máy phải tự `npm run code-graph` lần đầu.
+
 ---
 
 ## 5. Naming Convention

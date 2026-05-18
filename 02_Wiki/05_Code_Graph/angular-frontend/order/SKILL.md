@@ -1,6 +1,6 @@
 ---
 name: order
-description: "Skill for the Order area of angular-frontend. 11 symbols across 1 files."
+description: "Skill for the Order area of laptop-shop-angular. 11 symbols across 1 files."
 ---
 
 # Order

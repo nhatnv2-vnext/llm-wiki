@@ -18,8 +18,8 @@ description: "Skill for the Config area of laptop-shop. 5 symbols across 5 files
 | File | Symbols |
 |------|---------|
 | `src/main.ts` | bootstrap |
-| `src/config/cors.config.ts` | createCorsOptions |
 | `src/core/transform.interceptor.ts` | TransformInterceptor |
+| `src/config/cors.config.ts` | createCorsOptions |
 | `src/common/bull-board.setup.ts` | setupBullBoard |
 | `src/auth/guards/jwt-auth.guard.ts` | JwtAuthGuard |
 

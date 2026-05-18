@@ -1,6 +1,6 @@
 ---
 name: services
-description: "Skill for the Services area of angular-frontend. 12 symbols across 1 files."
+description: "Skill for the Services area of laptop-shop-angular. 12 symbols across 1 files."
 ---
 
 # Services
