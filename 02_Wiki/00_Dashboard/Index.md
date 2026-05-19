@@ -47,6 +47,8 @@ tags:
 
 ## 🤖 LLM / RAG
 - Slash command `/ask-vault` (Claude Code): `.claude/skills/ask-vault/SKILL.md` — chạy `claude` từ trong vault để skill được load
+- Slash command `/spec-screen <ID>`: sinh functional spec màn hình từ Figma + Angular code (`.claude/skills/spec-screen/SKILL.md`) → output `02_Wiki/06_Screen_Specs/`
+- Danh mục màn hình: [Screens.json](Screens.json) — nguồn dữ liệu của `/spec-screen`
 - System prompt RAG ngoài Claude Code: `System/PROMPTS/ask_vault_system.md`
 - Index nhanh cho RAG: `02_Wiki/00_Dashboard/Vault_Index.json` (chạy `npm run index-vault`)
 

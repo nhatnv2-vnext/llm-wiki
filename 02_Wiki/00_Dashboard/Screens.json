@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "description": "Catalog các màn hình app laptop-shop. Dùng bởi skill /spec-screen để sinh tài liệu spec từ Figma + code.",
+  "schema": {
+    "id": "string, định danh duy nhất (SCR_XXX)",
+    "name": "string, tên màn hình tiếng Việt",
+    "url": "string, path route Angular (không slash đầu, vd 'cart', 'order/:id')",
+    "component": "string, đường dẫn tương đối từ src/ của Angular project",
+    "figma_node_url": "string[], danh sách URL Figma node (có thể rỗng)",
+    "related_apis": "string[], danh sách endpoint API liên quan ('METHOD /path')",
+    "status": "draft | reviewed | stale",
+    "last_synced": "YYYY-MM-DD hoặc null"
+  },
+  "screens": [
+    {
+      "id": "SCR_001",
+      "name": "Trang chủ",
+      "url": "/",
+      "component": "src/app/client/home/home.component.ts",
+      "figma_node_url": ["https://www.figma.com/design/Il3DbCCq0usFIsW8Kxuagf/eCommerce-Template---Tech-Store--Community-?node-id=49-53&t=Y90UuFJhDYmb9NJa-4"],
+      "related_apis": ["GET /products"],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "SCR_002",
+      "name": "Tìm kiếm / Danh sách sản phẩm",
+      "url": "products",
+      "component": "src/app/client/product/product-list.component.ts",
+      "figma_node_url": [
+        "https://www.figma.com/design/Il3DbCCq0usFIsW8Kxuagf/eCommerce-Template---Tech-Store--Community-?node-id=73-291"
+      ],
+      "related_apis": ["GET /products", "GET /products/:id"],
+      "status": "draft",
+      "last_synced": "2026-05-19"
+    },
+    {
+      "id": "SCR_003",
+      "name": "Chi tiết sản phẩm",
+      "url": "products/:id",
+      "component": "src/app/client/product/product-detail.component.ts",
+      "figma_node_url": ["https://www.figma.com/design/Il3DbCCq0usFIsW8Kxuagf/eCommerce-Template---Tech-Store--Community-?node-id=73-4229&t=Y90UuFJhDYmb9NJa-4"],
+      "related_apis": ["GET /products/:id", "POST /cart"],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "SCR_004",
+      "name": "Giỏ hàng",
+      "url": "cart",
+      "component": "src/app/client/cart/cart.component.ts",
+      "figma_node_url": ["https://www.figma.com/design/Il3DbCCq0usFIsW8Kxuagf/eCommerce-Template---Tech-Store--Community-?node-id=133-4139&t=Y90UuFJhDYmb9NJa-4"],
+      "related_apis": ["GET /cart", "PATCH /cart/:itemId", "DELETE /cart/:itemId"],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "SCR_005",
+      "name": "Đăng nhập",
+      "url": "login",
+      "component": "src/app/client/auth/login.component.ts",
+      "figma_node_url": [],
+      "related_apis": ["POST /auth/login"],
+      "status": "draft",
+      "last_synced": null
+    }
+  ]
+}

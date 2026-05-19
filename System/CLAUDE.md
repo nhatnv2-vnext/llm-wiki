@@ -158,6 +158,12 @@ Khi trả lời câu hỏi của user trong vault, AI nên:
 - Nếu gọi LLM ngoài Claude Code, dùng system prompt ở `System/PROMPTS/ask_vault_system.md`.
 - Skill phải đọc `MEMORY.md` trước để biết các quyết định đã chốt (parser ts-morph, install GitNexus global, …).
 
+### 6.2. Khi user muốn sinh spec màn hình (Figma + code)
+- Dùng slash command `/spec-screen <ID>` (file `.claude/skills/spec-screen/SKILL.md`).
+- Catalog màn hình: `02_Wiki/00_Dashboard/Screens.json` — phải có entry trước khi gọi skill.
+- Skill spawn 2 sub-agent SONG SONG: `figma-reader` (MCP Figma) + `code-reader` (Read/Grep Angular). Main agent merge output + template `_Templates/screen_spec_template.md` → ghi `02_Wiki/06_Screen_Specs/<ID>_<slug>.md`.
+- Kiến trúc tách 2 sub-agent là CỐ Ý để tiết kiệm context window (Figma metadata + Angular code đều lớn).
+
 ---
 
 _Last updated: 2026-05-11_
