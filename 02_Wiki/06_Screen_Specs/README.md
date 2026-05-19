@@ -29,6 +29,9 @@ Thư mục chứa **functional spec cho từng màn hình** của app `laptop-sh
 - Tên file: `<ID>_<Snake_Case_Name>.md` (vd `SCR_002_Products_Search.md`)
 - Frontmatter `type: screen-spec`, tag bắt buộc `screen-spec` + `<id>` (lowercase)
 
+## Specs đã có
+- [[SCR_002_Tim_Kiem_San_Pham]] — Tìm kiếm / Danh sách sản phẩm
+
 ## Liên kết
 - [[Index]]
 - [[Frontend_Overview]]
