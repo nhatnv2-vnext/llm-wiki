@@ -30,6 +30,7 @@ Thư mục chứa **functional spec cho từng màn hình** của app `laptop-sh
 - Frontmatter `type: screen-spec`, tag bắt buộc `screen-spec` + `<id>` (lowercase)
 
 ## Specs đã có
+- [[SCR_001_Trang_Chu]] — Trang chủ
 - [[SCR_002_Tim_Kiem_San_Pham]] — Tìm kiếm / Danh sách sản phẩm
 
 ## Liên kết
