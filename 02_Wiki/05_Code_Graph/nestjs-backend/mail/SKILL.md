@@ -1,41 +1,40 @@
 ---
-name: config
-description: "Skill for the config area of nestjs-backend (3 files indexed)."
+name: mail
+description: "Skill for the mail area of nestjs-backend (5 files indexed)."
 type: architecture
 source:
-  - 01_Raw/codebase/nestjs-backend/src/config
+  - 01_Raw/codebase/nestjs-backend/src/mail
 status: draft
 last_synced: 2026-05-24
 tags:
   - code-graph
   - codegraph
   - nestjs-backend
-  - config
+  - mail
 ---
 
-# config · nestjs-backend
+# mail · nestjs-backend
 
 > Sinh tự động bởi `codegraph context` từ index `.codegraph/codegraph.db`.
 > Re-run: `npm --prefix System run code-graph`.
 
-**Vị trí:** `01_Raw/codebase/nestjs-backend/src/config` — 3 file indexed.
+**Vị trí:** `01_Raw/codebase/nestjs-backend/src/mail` — 5 file indexed.
 
 ## Code Context
 
-**Query:** Explain the config area: main components, entry points, key symbols
+**Query:** Explain the mail area: main components, entry points, key symbols
 
 ### Entry Points
 
 - **main** (function) - prisma/seed.ts:12
   `()`
-- **CorsConfigService** (class) - src/config/cors.config.ts:6
-- **constructor** (method) - src/config/cors.config.ts:7
-  `(private configService: ConfigService)`
+- **MailModule** (class) - src/mail/mail.module.ts:35
+- **MailService** (class) - src/mail/services/mail.service.ts:9
 
 ### Related Symbols
 
 - prisma/seed.ts: seedPermissions:33, seedRoles:77, seedRolePermissions:116, seedUsers:151, seedProducts:235
-- src/config/cors.config.ts: createCorsOptions:9, getCorsHeaders:45
+- src/mail/services/mail.service.ts: logger:10, constructor:12, sendEmail:14, sendWelcomeEmail:50, sendPasswordResetEmail:78
 
 ## Khám phá sâu hơn
 

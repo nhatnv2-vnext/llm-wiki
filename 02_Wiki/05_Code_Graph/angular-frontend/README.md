@@ -4,22 +4,30 @@ type: architecture
 source:
   - 01_Raw/codebase/angular-frontend
 status: draft
-last_synced: 2026-05-18
-tags: [code-graph, gitnexus, angular-frontend]
+last_synced: 2026-05-24
+tags:
+  - code-graph
+  - codegraph
+  - angular-frontend
 ---
 
 # Code Graph: angular-frontend
 
-Sinh bởi `gitnexus analyze --skills` lên `01_Raw/codebase/angular-frontend`.
+Sinh bởi `codegraph index` + `codegraph context` (@colbymchenry/codegraph, MIT).
+Index nội bộ: `01_Raw/codebase/angular-frontend/.codegraph/` (SQLite, gitignored).
+Src root: `src/app`.
 
-## Skill files
-- [[cart/SKILL]]
-- [[dashboard/SKILL]]
-- [[home/SKILL]]
-- [[interceptors/SKILL]]
-- [[order/SKILL]]
-- [[services/SKILL]]
+## Skill files (per area)
+- [[admin/SKILL|admin]]
+- [[client/SKILL|client]]
+- [[error/SKILL|error]]
+- [[shared/SKILL|shared]]
+
+## Re-index
+```bash
+npm --prefix System run code-graph             # toàn bộ projects
+npm --prefix System run code-graph -- angular-frontend  # chỉ project này (qua run_codegraph.sh arg)
+```
 
 ## Liên kết
-- Index nội bộ (LadybugDB): `01_Raw/codebase/angular-frontend/.gitnexus/`
-- Dashboard chính: [[Index]]
+- [[Index]] — Dashboard chính

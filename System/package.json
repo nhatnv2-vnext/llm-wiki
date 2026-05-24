@@ -9,9 +9,8 @@
     "lint-specs": "bash agent_skills/lint_specs.sh",
     "audit-links": "node agent_skills/audit_links.js",
     "generate-graph": "node agent_skills/generate_mermaid.js",
-    "code-graph": "bash agent_skills/run_gitnexus.sh",
-    "code-graph:zip": "bash agent_skills/zip_for_gitnexus.sh",
-    "code-graph:serve": "gitnexus serve",
+    "code-graph": "bash agent_skills/run_codegraph.sh",
+    "code-graph:mcp": "codegraph serve",
     "index-vault": "node agent_skills/build_vault_index.js",
     "stats": "node agent_skills/vault_stats.js",
     "validate": "npm run lint-specs && npm run audit-links && echo 'Vault integrity OK'"

@@ -10,7 +10,7 @@ Thumbs.db
 **/node_modules/
 
 # Layer 1 — code mounted, không commit nội dung repo con
-01_Raw/codebase/*/.gitnexus/
+01_Raw/codebase/*/.codegraph/
 01_Raw/codebase/*/node_modules/
 01_Raw/codebase/*/dist/
 01_Raw/codebase/*/.next/
@@ -42,4 +42,4 @@ Untitled.base
 Untitled.md
 
 # NOTE: 02_Wiki/05_Code_Graph/ ĐƯỢC commit (theo quyết định team) để
-# người mở Obsidian không cần cài gitnexus.
+# người mở Obsidian không cần cài codegraph.

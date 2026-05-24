@@ -3,8 +3,8 @@
  * ingest_codebase.js — Entry point cho quy trình "Code → Wiki".
  *
  * ⚠️ Cho codebase Node.js / FE (Next.js, NestJS, Vue, monorepo):
- *    BẮT BUỘC dùng ts-morph (xem CLAUDE.md §2.1). KHÔNG dùng GitNexus.
- *    Lý do: GitNexus không resolve được path alias `@/` và không hiểu monorepo.
+ *    BẮT BUỘC dùng ts-morph (xem CLAUDE.md §2.1) cho custom AST fine-grained.
+ *    Code-graph overview dùng CodeGraph (`npm run code-graph`), không cần chỉnh script này.
  *
  * Cài đặt:
  *   cd "System" && npm install ts-morph

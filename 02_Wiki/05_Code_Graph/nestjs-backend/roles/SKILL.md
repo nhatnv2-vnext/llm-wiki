@@ -1,54 +1,53 @@
 ---
 name: roles
-description: "Skill for the Roles area of laptop-shop. 6 symbols across 1 files."
+description: "Skill for the roles area of nestjs-backend (6 files indexed)."
+type: architecture
+source:
+  - 01_Raw/codebase/nestjs-backend/src/roles
+status: draft
+last_synced: 2026-05-24
+tags:
+  - code-graph
+  - codegraph
+  - nestjs-backend
+  - roles
 ---
 
-# Roles
+# roles · nestjs-backend
 
-6 symbols | 1 files | Cohesion: 100%
+> Sinh tự động bởi `codegraph context` từ index `.codegraph/codegraph.db`.
+> Re-run: `npm --prefix System run code-graph`.
 
-## When to Use
+**Vị trí:** `01_Raw/codebase/nestjs-backend/src/roles` — 6 file indexed.
 
-- Working with code in `src/`
-- Understanding how create, findOne, update work
-- Modifying roles-related functionality
+## Code Context
 
-## Key Files
+**Query:** Explain the roles area: main components, entry points, key symbols
 
-| File | Symbols |
-|------|---------|
-| `src/roles/roles.service.ts` | create, findOne, update, remove, assignPermissionsToRole (+1) |
+### Entry Points
 
-## Entry Points
+- **main** (function) - prisma/seed.ts:12
+  `()`
+- **ROLES** (constant) - src/common/decorators/customize.ts:26
+  `= 'roles'`
+- **ROLES** (constant) - src/auth/constants/permissions.constant.ts:47
+  `= {
+  ADMIN: 'ADMIN',
+  CUSTOMER: 'CUSTOMER',
+  STAFF_SALES: 'STAFF_SALES',
+  STAFF_WAREHOUSE: 'STAFF_...`
 
-Start here when exploring this area:
+### Related Symbols
 
-- **`create`** (Method) — `src/roles/roles.service.ts:13`
-- **`findOne`** (Method) — `src/roles/roles.service.ts:50`
-- **`update`** (Method) — `src/roles/roles.service.ts:80`
-- **`remove`** (Method) — `src/roles/roles.service.ts:113`
-- **`assignPermissionsToRole`** (Method) — `src/roles/roles.service.ts:144`
+- prisma/seed.ts: seedPermissions:33, seedRoles:77, seedRolePermissions:116, seedUsers:151, seedProducts:235
 
-## Key Symbols
+## Khám phá sâu hơn
 
-| Symbol | Type | File | Line |
-|--------|------|------|------|
-| `create` | Method | `src/roles/roles.service.ts` | 13 |
-| `findOne` | Method | `src/roles/roles.service.ts` | 50 |
-| `update` | Method | `src/roles/roles.service.ts` | 80 |
-| `remove` | Method | `src/roles/roles.service.ts` | 113 |
-| `assignPermissionsToRole` | Method | `src/roles/roles.service.ts` | 144 |
-| `updateRolePermissions` | Method | `src/roles/roles.service.ts` | 210 |
+- Query symbol cụ thể: `codegraph query "<name>" -p 01_Raw/codebase/nestjs-backend`
+- Tìm callers: `codegraph callers <symbol> -p 01_Raw/codebase/nestjs-backend`
+- Impact analysis: `codegraph impact <symbol> -p 01_Raw/codebase/nestjs-backend`
+- Live MCP query trong Claude Code: `npm --prefix System run code-graph:mcp`
 
-## Execution Flows
-
-| Flow | Type | Steps |
-|------|------|-------|
-| `Remove → AssignPermissionsToRole` | intra_community | 3 |
-| `Remove → FindOne` | intra_community | 3 |
-
-## How to Explore
-
-1. `gitnexus_context({name: "create"})` — see callers and callees
-2. `gitnexus_query({query: "roles"})` — find related execution flows
-3. Read key files listed above for implementation details
+## Liên kết
+- [[README]] — Index project nestjs-backend
+- [[Index]] — Dashboard chính

@@ -1,48 +1,48 @@
 ---
 name: products
-description: "Skill for the Products area of laptop-shop. 7 symbols across 1 files."
+description: "Skill for the products area of nestjs-backend (8 files indexed)."
+type: architecture
+source:
+  - 01_Raw/codebase/nestjs-backend/src/products
+status: draft
+last_synced: 2026-05-24
+tags:
+  - code-graph
+  - codegraph
+  - nestjs-backend
+  - products
 ---
 
-# Products
+# products · nestjs-backend
 
-7 symbols | 1 files | Cohesion: 100%
+> Sinh tự động bởi `codegraph context` từ index `.codegraph/codegraph.db`.
+> Re-run: `npm --prefix System run code-graph`.
 
-## When to Use
+**Vị trí:** `01_Raw/codebase/nestjs-backend/src/products` — 8 file indexed.
 
-- Working with code in `src/`
-- Understanding how create, update, addProductToCart work
-- Modifying products-related functionality
+## Code Context
 
-## Key Files
+**Query:** Explain the products area: main components, entry points, key symbols
 
-| File | Symbols |
-|------|---------|
-| `src/products/products.service.ts` | create, update, addProductToCart, deleteProductInCart, updateCartDetailBeforeCheckout (+2) |
+### Entry Points
 
-## Entry Points
+- **Product** (class) - src/products/entities/product.entity.ts:1
+- **main** (function) - prisma/seed.ts:12
+  `()`
+- **ProductsModule** (class) - src/products/products.module.ts:11
 
-Start here when exploring this area:
+### Related Symbols
 
-- **`create`** (Method) — `src/products/products.service.ts:23`
-- **`update`** (Method) — `src/products/products.service.ts:75`
-- **`addProductToCart`** (Method) — `src/products/products.service.ts:104`
-- **`deleteProductInCart`** (Method) — `src/products/products.service.ts:188`
-- **`updateCartDetailBeforeCheckout`** (Method) — `src/products/products.service.ts:223`
+- src/products/entities/product.entity.ts: id:2, name:3, price:4, image:5, detailDesc:6
+- prisma/seed.ts: seedPermissions:33, seedRoles:77, seedRolePermissions:116, seedUsers:151, seedProducts:235
 
-## Key Symbols
+## Khám phá sâu hơn
 
-| Symbol | Type | File | Line |
-|--------|------|------|------|
-| `create` | Method | `src/products/products.service.ts` | 23 |
-| `update` | Method | `src/products/products.service.ts` | 75 |
-| `addProductToCart` | Method | `src/products/products.service.ts` | 104 |
-| `deleteProductInCart` | Method | `src/products/products.service.ts` | 188 |
-| `updateCartDetailBeforeCheckout` | Method | `src/products/products.service.ts` | 223 |
-| `handlePlaceOrder` | Method | `src/products/products.service.ts` | 234 |
-| `updatePaymentMethod` | Method | `src/products/products.service.ts` | 479 |
+- Query symbol cụ thể: `codegraph query "<name>" -p 01_Raw/codebase/nestjs-backend`
+- Tìm callers: `codegraph callers <symbol> -p 01_Raw/codebase/nestjs-backend`
+- Impact analysis: `codegraph impact <symbol> -p 01_Raw/codebase/nestjs-backend`
+- Live MCP query trong Claude Code: `npm --prefix System run code-graph:mcp`
 
-## How to Explore
-
-1. `gitnexus_context({name: "create"})` — see callers and callees
-2. `gitnexus_query({query: "products"})` — find related execution flows
-3. Read key files listed above for implementation details
+## Liên kết
+- [[README]] — Index project nestjs-backend
+- [[Index]] — Dashboard chính

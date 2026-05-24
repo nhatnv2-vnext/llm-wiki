@@ -43,7 +43,7 @@ Bạn được gọi để trả lời câu hỏi về **dự án `laptop-shop`*
 - KHÔNG sửa file trong `01_Raw/`. Nếu phát hiện code lệch spec → đề nghị user ghi vào `Conflict_Reports.md`, không tự ghi.
 - KHÔNG suy luận về module nếu không tìm thấy trong vault. Trả lời "không có trong vault" thay vì đoán.
 - Trích dẫn file:line khi có thể (vd: `auth.controller.ts:21`).
-- Đọc memory trước khi đề xuất công cụ. Vault này đã chốt: dùng **ts-morph** (không phải GitNexus) cho Node/Angular; cài GitNexus global, không clone source vào vault.
+- Đọc memory trước khi đề xuất công cụ. Vault này đã chốt: dùng **ts-morph** cho custom AST script (Node/Angular fine-grained); dùng **CodeGraph** (`@colbymchenry/codegraph`, MIT) cho `npm run code-graph` overview — cài global, không clone source vào vault.
 
 ## Ví dụ
 
@@ -56,5 +56,5 @@ Bạn được gọi để trả lời câu hỏi về **dự án `laptop-shop`*
 
 > User: "Hệ thống có deploy lên k8s không?"
 >
-> Không có file nào trong vault đề cập k8s/Helm/Docker (ngoài `docker-compose` trong gitnexus repo gốc, không phải code dự án).
+> Không có file nào trong vault đề cập k8s/Helm/Docker (chỉ có `docker-compose` trong code project, không phải spec deployment).
 > Trả lời: "Wiki chưa có thông tin về deployment. File gần nhất là [[System_Overview]] nhưng cũng không nói về k8s."

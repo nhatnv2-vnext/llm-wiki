@@ -1,6 +1,6 @@
 # 📚 My Project Vault
 
-Knowledge vault 3 lớp cho dự án **laptop-shop** (NestJS + Prisma + MySQL + Bull/Redis · Angular 21 SSR + NgRx + Tailwind), vận hành bằng AI agents (Claude Code + GitNexus) và hiển thị trên Obsidian.
+Knowledge vault 3 lớp cho dự án **laptop-shop** (NestJS + Prisma + MySQL + Bull/Redis · Angular 21 SSR + NgRx + Tailwind), vận hành bằng AI agents (Claude Code + CodeGraph) và hiển thị trên Obsidian.
 
 ## Bắt đầu
 
@@ -23,7 +23,7 @@ My_Project_Vault/
 cd System
 npm run sync-drive      # pull docs từ Google Drive → 01_Raw/drive_docs
 npm run ingest          # rebuild wiki từ code (ts-morph cho Node/Angular)
-npm run code-graph      # GitNexus → 02_Wiki/05_Code_Graph/<project>/*.md
+npm run code-graph      # CodeGraph → 02_Wiki/05_Code_Graph/<project>/*.md
 npm run validate        # chain lint-specs + audit-links (dùng trong CI/hook)
 npm run index-vault     # sinh 02_Wiki/00_Dashboard/Vault_Index.json (RAG)
 npm run stats           # cập nhật bảng "Vault Stats" trong Index.md
@@ -43,8 +43,8 @@ Lấy cảm hứng từ **context engineering + spec-driven development** ([Karp
 # 1. Clone vault
 git clone <repo> My_Project_Vault && cd My_Project_Vault
 
-# 2. Cài CLI GitNexus một lần
-sudo npm install -g gitnexus
+# 2. Cài CLI CodeGraph một lần
+npm install -g @colbymchenry/codegraph
 
 # 3. Cài deps & hook
 cd System
@@ -66,5 +66,5 @@ npm run stats
 ### Quy ước commit
 - Sửa file `02_Wiki/**/*.md` → hook `lint-specs` + `audit-links` chạy tự động trước commit.
 - PR → GH Actions chạy lại 3 check (`lint-specs`, `audit-links`, `index-vault`).
-- File auto-gen **trong `.gitignore`**: `Vault_Index.json`, `node_modules/`, `.gitnexus/`, `dist/` …
+- File auto-gen **trong `.gitignore`**: `Vault_Index.json`, `node_modules/`, `.codegraph/`, `dist/` …
 - File auto-gen **commit vào git** (cho team): `02_Wiki/05_Code_Graph/<project>/*.md` — sinh bởi `npm run code-graph`.

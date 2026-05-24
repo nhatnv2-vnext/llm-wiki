@@ -135,7 +135,7 @@ Sửa entry tương ứng: `status` = `"draft"`, `last_synced` = `"YYYY-MM-DD"` 
 - KHÔNG bịa nội dung. Mọi mục không suy luận được → `> ⚠️ Cần human review`.
 - KHÔNG bỏ qua bước update `Screens.json` (bước 7).
 - Sub-agent phải chạy SONG SONG (2 Agent tool calls trong cùng 1 message), không tuần tự.
-- Trước khi spawn sub-agent, đọc `MEMORY.md` để áp dụng quyết định đã chốt (vd: ts-morph cho Node, không dùng GitNexus cho Angular).
+- Trước khi spawn sub-agent, đọc `MEMORY.md` để áp dụng quyết định đã chốt (vd: ts-morph cho custom AST Node/Angular; CodeGraph cho code-graph overview).
 
 ## Ví dụ
 

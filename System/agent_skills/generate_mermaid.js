@@ -5,8 +5,8 @@
  * Input:  01_Raw/codebase/
  * Output: 02_Wiki/01_Architecture/*.md (chỉ phần Mermaid block, không ghi đè frontmatter)
  *
- * Đây là stub. Khi tích hợp GitNexus thực sự, thay phần TODO bằng AST walker
- * (vd: ts-morph cho NestJS, next/router scan cho Next.js).
+ * Đây là stub. Khi tích hợp đầy đủ, thay phần TODO bằng AST walker
+ * (ts-morph cho NestJS/Next, hoặc query CodeGraph qua `codegraph callers/callees --json`).
  */
 
 const fs = require('node:fs');

@@ -1,6 +1,6 @@
 # 01_Raw — Layer 1 (CHỈ ĐỌC)
 
-Đây là **nguồn sự thật thô**. AI agents (Claude Code, GitNexus) **TUYỆT ĐỐI KHÔNG** được ghi/sửa/xóa file trong thư mục này.
+Đây là **nguồn sự thật thô**. AI agents (Claude Code, CodeGraph) **TUYỆT ĐỐI KHÔNG** được ghi/sửa/xóa file trong thư mục này.
 
 ## Cấu trúc
 
@@ -23,8 +23,8 @@
 
 | Loại code | Parser | Ghi chú |
 |-----------|--------|---------|
-| Node.js / TypeScript / Next.js / NestJS / Vue (kể cả monorepo) | **ts-morph** | Bắt buộc — GitNexus không resolve được `@/` alias và monorepo |
-| Python | GitNexus | OK |
-| Go / Java / Rust | GitNexus | OK |
+| Node.js / TypeScript / Next.js / NestJS / Vue (custom ingest) | **ts-morph** | Control AST chi tiết, hiểu `tsconfig.paths` |
+| Code-graph overview (mọi ngôn ngữ) | **CodeGraph** (MIT) | `npm run code-graph` — sinh `.md` skill per area |
+| Python (custom) | `ast` builtin | OK |
 
 Xem chi tiết trong `System/CLAUDE.md` §2.1.

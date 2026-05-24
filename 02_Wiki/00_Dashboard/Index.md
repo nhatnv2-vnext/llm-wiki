@@ -38,12 +38,10 @@ tags:
 ## 🐞 Tasks & Logs
 - [[Conflict_Reports]] — Xung đột giữa code và PRD
 
-## 🕸 Code Graph (GitNexus)
-- [[05_Code_Graph/README|Code Graph index]] — Skill markdown sinh tự động bằng `gitnexus analyze --skills`
-- **Web UI** (Recommended):
-  1. `npm --prefix System run code-graph:serve` → mở server `http://localhost:4747`
-  2. Truy cập [gitnexus.vercel.app](https://gitnexus.vercel.app) — tự detect server local, hiện graph 3D
-- **Web UI offline**: `npm run code-graph:zip` rồi upload ZIP `/tmp/<project>-gitnexus.zip` vào trang web
+## 🕸 Code Graph (CodeGraph)
+- [[05_Code_Graph/README|Code Graph index]] — Skill markdown sinh tự động bằng `codegraph context` per area
+- Rebuild: `npm --prefix System run code-graph`
+- Query live qua MCP: `npm --prefix System run code-graph:mcp` (hoặc `codegraph install` để add MCP cho Claude Code)
 
 ## 🤖 LLM / RAG
 - Slash command `/ask-vault` (Claude Code): `.claude/skills/ask-vault/SKILL.md` — chạy `claude` từ trong vault để skill được load
@@ -80,10 +78,11 @@ tags:
 
 ## 🚀 Lệnh nhanh
 ```bash
-sudo npm install -g gitnexus              # cài CLI 1 lần (chỉ lần đầu)
+npm install -g @colbymchenry/codegraph    # cài CLI 1 lần (chỉ lần đầu)
 npm --prefix "System" run sync-drive      # pull docs mới
 npm --prefix "System" run ingest          # rebuild wiki từ code (ts-morph)
-npm --prefix "System" run code-graph      # GitNexus → 02_Wiki/05_Code_Graph
+npm --prefix "System" run code-graph      # CodeGraph → 02_Wiki/05_Code_Graph
+npm --prefix "System" run code-graph:mcp  # CodeGraph MCP server (query live)
 npm --prefix "System" run validate        # lint-specs + audit-links (chain)
 npm --prefix "System" run index-vault     # sinh Vault_Index.json cho RAG
 npm --prefix "System" run stats           # cập nhật bảng Vault Stats ở trên

@@ -1,41 +1,39 @@
 ---
-name: config
-description: "Skill for the config area of nestjs-backend (3 files indexed)."
+name: core
+description: "Skill for the core area of nestjs-backend (1 files indexed)."
 type: architecture
 source:
-  - 01_Raw/codebase/nestjs-backend/src/config
+  - 01_Raw/codebase/nestjs-backend/src/core
 status: draft
 last_synced: 2026-05-24
 tags:
   - code-graph
   - codegraph
   - nestjs-backend
-  - config
+  - core
 ---
 
-# config · nestjs-backend
+# core · nestjs-backend
 
 > Sinh tự động bởi `codegraph context` từ index `.codegraph/codegraph.db`.
 > Re-run: `npm --prefix System run code-graph`.
 
-**Vị trí:** `01_Raw/codebase/nestjs-backend/src/config` — 3 file indexed.
+**Vị trí:** `01_Raw/codebase/nestjs-backend/src/core` — 1 file indexed.
 
 ## Code Context
 
-**Query:** Explain the config area: main components, entry points, key symbols
+**Query:** Explain the core area: main components, entry points, key symbols
 
 ### Entry Points
 
 - **main** (function) - prisma/seed.ts:12
   `()`
-- **CorsConfigService** (class) - src/config/cors.config.ts:6
-- **constructor** (method) - src/config/cors.config.ts:7
-  `(private configService: ConfigService)`
+- **IS_PUBLIC_KEY** (constant) - src/common/decorators/customize.ts:7
+  `= 'isPublic'`
 
 ### Related Symbols
 
 - prisma/seed.ts: seedPermissions:33, seedRoles:77, seedRolePermissions:116, seedUsers:151, seedProducts:235
-- src/config/cors.config.ts: createCorsOptions:9, getCorsHeaders:45
 
 ## Khám phá sâu hơn
 

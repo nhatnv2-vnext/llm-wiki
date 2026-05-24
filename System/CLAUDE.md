@@ -1,6 +1,6 @@
 # CLAUDE.md — Bộ Não Trung Tâm của Vault
 
-> File này là **single source of truth** cho mọi AI agent (Claude Code, GitNexus, sub-agents) khi làm việc trong vault.
+> File này là **single source of truth** cho mọi AI agent (Claude Code, CodeGraph, sub-agents) khi làm việc trong vault.
 > Lấy cảm hứng từ phương pháp **context engineering + spec-driven development** của Andrej Karpathy
 > (xem [LLM Council gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)).
 
@@ -38,11 +38,11 @@ Khi được yêu cầu cập nhật wiki từ code:
 
 | Codebase | Parser bắt buộc | Lý do |
 |----------|-----------------|-------|
-| **Node.js / TypeScript / Angular / NestJS / Next.js / Vue** | **ts-morph** | GitNexus **KHÔNG** resolve được path alias (`@/`, `~/`, `#app/`) và không hiểu monorepo (turborepo, nx, pnpm/yarn workspaces). ts-morph tự đọc `tsconfig.json` (kể cả `paths`) và walk AST chính xác. |
-| Python | GitNexus hoặc `ast` builtin | OK |
-| Go / Java / Rust | GitNexus | OK |
+| **Node.js / TypeScript / Angular / NestJS / Next.js / Vue** (custom ingest) | **ts-morph** | Control AST chi tiết, tự đọc `tsconfig.json` (kể cả `paths`). Dùng khi cần parse fine-grained, sinh API spec/schema/route map. |
+| Code-graph overview (mọi ngôn ngữ) | **CodeGraph** (`@colbymchenry/codegraph`, MIT) | Index 19+ ngôn ngữ vào SQLite, resolve `tsconfig.paths`, dùng cho `npm run code-graph` (sinh `.md` skill per area). |
+| Python (custom) | `ast` builtin | OK |
 
-⚠️ **Luật cứng cho dự án Frontend/Node:** Mọi script ingest phải dùng `ts-morph`. Nếu thấy code dùng GitNexus cho Node project → dừng và đổi parser.
+⚠️ **Luật cứng cho dự án Frontend/Node:** Script ingest fine-grained (vd `ingest_codebase.js`) dùng `ts-morph`. Workflow code-graph overview dùng `CodeGraph` (xem §4.1).
 
 ---
 
@@ -94,45 +94,39 @@ Trigger qua `package.json`:
 | `npm run lint-specs` | Kiểm tra frontmatter |
 | `npm run audit-links` | Tìm broken wikilink + orphan note |
 | `npm run generate-graph` | Sinh lại sơ đồ Mermaid từ AST của code |
-| `npm run code-graph` | Chạy GitNexus lên code → output Markdown sang `02_Wiki/05_Code_Graph/` |
+| `npm run code-graph` | Chạy CodeGraph lên code → output Markdown sang `02_Wiki/05_Code_Graph/` |
+| `npm run code-graph:mcp` | Start CodeGraph MCP server (Claude Code/Cursor query graph live) |
 | `npm run index-vault` | Sinh `Vault_Index.json` cho RAG |
 | `npm run stats` | Cập nhật bảng "Vault Stats" trong `Index.md` |
 | `npm run validate` | Chain `lint-specs` + `audit-links` (dùng cho CI) |
 
-### 4.1. GitNexus — cài và dùng
+### 4.1. CodeGraph — cài và dùng
 
-GitNexus chỉ là **tool**, không phải nội dung vault.
+CodeGraph ([@colbymchenry/codegraph](https://github.com/colbymchenry/codegraph), **MIT license**) thay thế GitNexus từ 2026-05-24. Chỉ là **tool**, không phải nội dung vault.
 
-- **Cài 1 lần** (user tự chạy lệnh sudo, AI không tự chạy):
+- **Cài 1 lần:**
   ```bash
-  sudo npm install -g gitnexus
+  npm install -g @colbymchenry/codegraph
   ```
-- **KHÔNG** clone source GitNexus vào vault.
-- **KHÔNG** cài cục bộ vào subfolder của vault.
-- **Output**: chỉ file `.md` mới được copy sang `02_Wiki/05_Code_Graph/<project>/`. Wrapper trong `System/agent_skills/run_gitnexus.sh`.
-- Index nội bộ của GitNexus (LadybugDB) nằm ở `01_Raw/codebase/<project>/.gitnexus/` — không đồng bộ ngược, không edit.
+- **KHÔNG** clone source CodeGraph vào vault.
+- **Output**: file `.md` skill sang `02_Wiki/05_Code_Graph/<project>/<area>/SKILL.md`. Wrapper trong `System/agent_skills/run_codegraph.sh`.
+- Index nội bộ: SQLite ở `01_Raw/codebase/<project>/.codegraph/codegraph.db` — đã `.gitignore`, mỗi máy phải tự `npm run code-graph` lần đầu.
 
-#### Web UI 3D graph — 2 cách
+#### Khám phá live qua MCP (thay Web UI 3D cũ)
 
-**A. Local serve (Recommended — nhanh, không upload)**
+CodeGraph không có Web UI 3D như GitNexus. Để Claude Code (hoặc Cursor/Codex) query graph live, dùng MCP:
+
 1. Index 1 lần: `npm --prefix System run code-graph`
-2. Khởi động HTTP server: `npm --prefix System run code-graph:serve`
-   → server listen ở `http://localhost:4747` (IPv6 `::1`).
-3. Mở https://gitnexus.vercel.app trong browser. Web UI tự detect server local (qua `Access-Control-Allow-Private-Network`) và list các repo đã index.
-4. Click repo → graph 3D + GraphRAG chat hiện ra.
-5. Dừng server bằng Ctrl-C (hoặc `kill <pid>`).
+2. Cài MCP server cho agent: `codegraph install` (interactive — chọn Claude Code).
+3. Hoặc start MCP server thủ công: `npm --prefix System run code-graph:mcp`.
+4. Trong Claude Code, các tool `mcp__codegraph__*` xuất hiện: query symbol, callers, callees, impact analysis.
 
-**B. Upload ZIP (khi không muốn chạy server)**
-- Tạo ZIP gọn:
-  ```bash
-  npm --prefix System run code-graph:zip                # zip tất cả
-  npm --prefix System run code-graph:zip nestjs-backend # zip 1 project
-  ```
-- Drag-drop file `/tmp/<project>-gitnexus.zip` vào https://gitnexus.vercel.app
-
-**Lưu ý chung**:
-- Chat GraphRAG cần API key (OpenAI/Anthropic) — KHÔNG đưa secret vào prompt vì câu hỏi gửi tới LLM.
-- Index nội bộ ở `01_Raw/codebase/<project>/.gitnexus/` (đã `.gitignore`) → mỗi máy phải tự `npm run code-graph` lần đầu.
+CLI query trực tiếp (không cần MCP):
+```bash
+codegraph query "<keyword>"  -p 01_Raw/codebase/<project>
+codegraph callers <symbol>   -p 01_Raw/codebase/<project>
+codegraph impact <symbol>    -p 01_Raw/codebase/<project>
+```
 
 ---
 
@@ -156,7 +150,7 @@ Khi trả lời câu hỏi của user trong vault, AI nên:
 ### 6.1. Khi user hỏi câu định tính về dự án (RAG)
 - Dùng slash command `/ask-vault` (file `.claude/skills/ask-vault/SKILL.md`) — Claude Code tự load khi CWD là `My_Project_Vault/`.
 - Nếu gọi LLM ngoài Claude Code, dùng system prompt ở `System/PROMPTS/ask_vault_system.md`.
-- Skill phải đọc `MEMORY.md` trước để biết các quyết định đã chốt (parser ts-morph, install GitNexus global, …).
+- Skill phải đọc `MEMORY.md` trước để biết các quyết định đã chốt (ts-morph cho custom AST, CodeGraph cho code-graph overview, …).
 
 ### 6.2. Khi user muốn sinh spec màn hình (Figma + code)
 - Dùng slash command `/spec-screen <ID>` (file `.claude/skills/spec-screen/SKILL.md`).
