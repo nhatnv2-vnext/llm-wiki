@@ -64,6 +64,19 @@ Khi được yêu cầu cập nhật wiki từ code:
 
 **Audit:** Mọi plan file đã apply (`applied_at` set) được giữ vĩnh viễn trong `Ingest_Plans/`. Git blame frontmatter `approved_by` → biết ai duyệt cái gì khi nào.
 
+### 2.3. CI bot — Vault PR Summary
+
+PR đụng `02_Wiki/**` hoặc `System/**` → bot `pr-summary` (file `.github/workflows/wiki-ci.yml`, logic `System/agent_skills/pr_summary.js`) tự động post markdown comment liệt kê:
+
+- File changes (Wiki / System / Skill) với emoji theo status (🆕 added, ✏️ modified, 🗑️ removed).
+- Bảng **Ingest plans** có trong PR + status + approver + applied?
+- Bảng **Screen drafts** + approver + applied?
+- Warning nếu plan/draft chưa approved hoặc chưa apply.
+
+**Idempotent:** Bot tìm comment cũ qua marker `<!-- vault-pr-summary-bot -->` → update content, không spam.
+
+**Disable:** Comment-out job `pr-summary` trong `wiki-ci.yml`, hoặc thêm guard `if: !contains(github.event.pull_request.labels.*.name, 'no-bot')` rồi gắn label `no-bot` vào PR.
+
 ---
 
 ## 3. Quy Tắc Viết Markdown (Obsidian-flavored)
