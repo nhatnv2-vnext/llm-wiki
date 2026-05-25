@@ -22,7 +22,8 @@ My_Project_Vault/
 ```bash
 cd System
 npm run sync-drive      # pull docs từ Google Drive → 01_Raw/drive_docs
-npm run ingest          # rebuild wiki từ code (ts-morph cho Node/Angular)
+npm run ingest:plan     # b1: sinh plan vào 04_Tasks_&_Logs/Ingest_Plans/
+npm run ingest:apply <plan-file>  # b2: apply plan đã approve (xem CLAUDE.md §2.2)
 npm run code-graph      # CodeGraph → 02_Wiki/05_Code_Graph/<project>/*.md
 npm run validate        # chain lint-specs + audit-links (dùng trong CI/hook)
 npm run index-vault     # sinh 02_Wiki/00_Dashboard/Vault_Index.json (RAG)

@@ -44,6 +44,26 @@ Khi được yêu cầu cập nhật wiki từ code:
 
 ⚠️ **Luật cứng cho dự án Frontend/Node:** Script ingest fine-grained (vd `ingest_codebase.js`) dùng `ts-morph`. Workflow code-graph overview dùng `CodeGraph` (xem §4.1).
 
+### 2.2. Plan-review gate (BẮT BUỘC cho mọi LLM-driven write)
+
+**Triết lý:** Vault là tài sản chung của team. LLM hallucinate có thể ghi đè kiến thức cũ. Mọi script/skill ghi vào `02_Wiki/` PHẢI qua **plan → human approve → apply**.
+
+| Workflow | Plan output | Approval check | Apply gate |
+|----------|-------------|----------------|------------|
+| `npm run ingest:plan` → `npm run ingest:apply <plan>` | `02_Wiki/04_Tasks_&_Logs/Ingest_Plans/<YYYY-MM-DD>_<slug>.md` | Frontmatter `approved_by` + `approved_at` không null | Script `ingest_codebase.js apply` validate trước khi ghi |
+| `/spec-screen <ID>` → `/spec-screen apply <ID>` | `02_Wiki/06_Screen_Specs/_drafts/<ID>_<slug>.md` | Frontmatter `approved_by` + `approved_at` không null | Skill `apply` mode validate, mv ra root, update Screens.json |
+
+**Quy tắc cứng:**
+
+1. **KHÔNG ghi thẳng** vào `02_Wiki/` từ script/skill LLM-driven. Luôn vào folder draft / plan dir trước.
+2. **Reviewer phải khác người chạy plan** khi possible (4-eyes principle). Set `approved_by` = github handle thật.
+3. **Re-apply bị cấm.** Mỗi plan/draft áp dụng đúng 1 lần. Cần re-generate nếu muốn áp dụng lại.
+4. **Stale plan guard:** plan ghi `source_snapshot` (commit SHA của submodule). Khi apply, script so lại — lệch → refuse trừ khi `--force`.
+5. **Rejected plan/draft:** set `status: rejected` + section `## Rejection reason` trong file. File giữ vĩnh viễn để audit.
+6. **Manual edit wiki vẫn được phép** — dev edit tay trong Obsidian + commit normal. Plan-review chỉ gate **LLM** write.
+
+**Audit:** Mọi plan file đã apply (`applied_at` set) được giữ vĩnh viễn trong `Ingest_Plans/`. Git blame frontmatter `approved_by` → biết ai duyệt cái gì khi nào.
+
 ---
 
 ## 3. Quy Tắc Viết Markdown (Obsidian-flavored)

@@ -37,6 +37,7 @@ tags:
 
 ## 🐞 Tasks & Logs
 - [[Conflict_Reports]] — Xung đột giữa code và PRD
+- [[04_Tasks_&_Logs/Ingest_Plans/README|Ingest Plans]] — Plan-review gate cho LLM-driven write (xem `CLAUDE.md §2.2`)
 
 ## 🕸 Code Graph (CodeGraph)
 - [[05_Code_Graph/README|Code Graph index]] — Skill markdown sinh tự động bằng `codegraph context` per area
@@ -80,7 +81,8 @@ tags:
 ```bash
 npm install -g @colbymchenry/codegraph    # cài CLI 1 lần (chỉ lần đầu)
 npm --prefix "System" run sync-drive      # pull docs mới
-npm --prefix "System" run ingest          # rebuild wiki từ code (ts-morph)
+npm --prefix "System" run ingest:plan     # b1: sinh plan vào Ingest_Plans/
+npm --prefix "System" run ingest:apply <plan>  # b2: apply plan đã approve
 npm --prefix "System" run code-graph      # CodeGraph → 02_Wiki/05_Code_Graph
 npm --prefix "System" run code-graph:mcp  # CodeGraph MCP server (query live)
 npm --prefix "System" run validate        # lint-specs + audit-links (chain)

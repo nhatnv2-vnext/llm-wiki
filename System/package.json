@@ -4,7 +4,9 @@
   "private": true,
   "description": "Knowledge vault — Layer 3 automation triggers (ingest, sync, lint, generate)",
   "scripts": {
-    "ingest": "node agent_skills/ingest_codebase.js",
+    "ingest": "echo '⚠️  Use ingest:plan then ingest:apply (xem System/CLAUDE.md §2.2)' && exit 1",
+    "ingest:plan": "node agent_skills/ingest_codebase.js plan",
+    "ingest:apply": "node agent_skills/ingest_codebase.js apply",
     "sync-drive": "bash agent_skills/sync_drive.sh",
     "lint-specs": "bash agent_skills/lint_specs.sh",
     "audit-links": "node agent_skills/audit_links.js",
@@ -15,10 +17,16 @@
     "stats": "node agent_skills/vault_stats.js",
     "validate": "npm run lint-specs && npm run audit-links && echo 'Vault integrity OK'"
   },
-  "keywords": ["obsidian", "claude-code", "ts-morph", "knowledge-vault"],
+  "keywords": [
+    "obsidian",
+    "claude-code",
+    "ts-morph",
+    "knowledge-vault"
+  ],
   "author": "captainnhatmoc@gmail.com",
   "license": "UNLICENSED",
   "dependencies": {
+    "gray-matter": "^4.0.3",
     "ts-morph": "^24.0.0"
   }
 }
