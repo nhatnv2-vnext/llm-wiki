@@ -15,6 +15,7 @@
     "code-graph:mcp": "codegraph serve",
     "code-graph:fetch": "bash agent_skills/fetch_codegraph.sh",
     "code-graph:host-sync": "bash agent_skills/codegraph_host/cron_sync.sh",
+    "report:asks": "node agent_skills/analyze_asks.js",
     "index-vault": "node agent_skills/build_vault_index.js",
     "stats": "node agent_skills/vault_stats.js",
     "validate": "npm run lint-specs && npm run audit-links && echo 'Vault integrity OK'"

@@ -26,6 +26,9 @@ System/*.log
 # Auto-gen RAG index (rebuild bằng `npm run index-vault`)
 02_Wiki/00_Dashboard/Vault_Index.json
 
+# NOTE: 02_Wiki/04_Tasks_&_Logs/Ask_Logs/ ĐƯỢC commit (telemetry team-wide, xem CLAUDE.md §2.4)
+# NOTE: 02_Wiki/04_Tasks_&_Logs/Ask_Reports/ ĐƯỢC commit (aggregate report cho lead review)
+
 # Obsidian per-user
 .obsidian/workspace*.json
 .obsidian/cache/

@@ -64,6 +64,26 @@ Khi được yêu cầu cập nhật wiki từ code:
 
 **Audit:** Mọi plan file đã apply (`applied_at` set) được giữ vĩnh viễn trong `Ingest_Plans/`. Git blame frontmatter `approved_by` → biết ai duyệt cái gì khi nào.
 
+### 2.4. Ask telemetry (`/ask-vault` logging)
+
+Mỗi `/ask-vault` BẮT BUỘC append 1 JSONL entry vào `02_Wiki/04_Tasks_&_Logs/Ask_Logs/<YYYY-MM>.jsonl` (xem `.claude/skills/ask-vault/SKILL.md` Bước 6).
+
+**Schema:** `ts` (ISO UTC), `user` (git email), `question` (≤300 ký tự), `answer_summary` (≤200 ký tự).
+
+**Privacy:** Log commit vào vault, team-wide visibility. KHÔNG gõ secret/PII vào `/ask-vault`.
+
+**Aggregate report:**
+```bash
+npm --prefix System run report:asks            # tháng hiện tại
+npm --prefix System run report:asks 2026-04    # tháng cụ thể
+```
+Output `02_Wiki/04_Tasks_&_Logs/Ask_Reports/<YYYY-MM>.md` — lead đọc để biết:
+- Top câu hỏi → wiki page nào core nhất.
+- ⚠️ Gap (`answer_summary` chứa "wiki chưa có") → ưu tiên viết bổ sung.
+- User histogram → ai dùng vault nhiều (power user).
+
+**Pattern reuse:** Skill khác (vd `/spec-screen`) có thể port telemetry tương tự với folder log riêng.
+
 ### 2.3. CI bot — Vault PR Summary
 
 PR đụng `02_Wiki/**` hoặc `System/**` → bot `pr-summary` (file `.github/workflows/wiki-ci.yml`, logic `System/agent_skills/pr_summary.js`) tự động post markdown comment liệt kê:

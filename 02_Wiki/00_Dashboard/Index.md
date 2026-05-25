@@ -38,6 +38,8 @@ tags:
 ## 🐞 Tasks & Logs
 - [[Conflict_Reports]] — Xung đột giữa code và PRD
 - [[04_Tasks_&_Logs/Ingest_Plans/README|Ingest Plans]] — Plan-review gate cho LLM-driven write (xem `CLAUDE.md §2.2`)
+- [[04_Tasks_&_Logs/Ask_Logs/README|Ask Logs]] — Telemetry từ `/ask-vault` (xem `CLAUDE.md §2.4`)
+- [[04_Tasks_&_Logs/Ask_Reports/README|Ask Reports]] — Aggregate report hàng tháng
 
 ## 🕸 Code Graph (CodeGraph)
 - [[05_Code_Graph/README|Code Graph index]] — Skill markdown sinh tự động bằng `codegraph context` per area

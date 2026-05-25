@@ -1,0 +1,3 @@
+{"ts": "2026-05-25T14:00:00Z", "user": "nhatnv2@vnext.vn", "question": "Auth flow như thế nào?", "answer_summary": "POST /auth/login JWT lưu users.refresh_token. Frontend interceptor refresh 401."}
+{"ts": "2026-05-25T14:30:00Z", "user": "nhatnv2@vnext.vn", "question": "Deploy k8s thế nào?", "answer_summary": "Wiki chưa có thông tin về deployment. File gần nhất là System_Overview."}
+{"ts": "2026-05-25T15:00:00Z", "user": "teammate@vnext.vn", "question": "Module cart làm gì?", "answer_summary": "CartComponent ở src/app/client/cart/cart.component.ts:474, gọi CartService."}
