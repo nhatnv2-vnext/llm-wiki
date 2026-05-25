@@ -13,6 +13,8 @@
     "generate-graph": "node agent_skills/generate_mermaid.js",
     "code-graph": "bash agent_skills/run_codegraph.sh",
     "code-graph:mcp": "codegraph serve",
+    "code-graph:fetch": "bash agent_skills/fetch_codegraph.sh",
+    "code-graph:host-sync": "bash agent_skills/codegraph_host/cron_sync.sh",
     "index-vault": "node agent_skills/build_vault_index.js",
     "stats": "node agent_skills/vault_stats.js",
     "validate": "npm run lint-specs && npm run audit-links && echo 'Vault integrity OK'"

@@ -161,6 +161,24 @@ codegraph callers <symbol>   -p 01_Raw/codebase/<project>
 codegraph impact <symbol>    -p 01_Raw/codebase/<project>
 ```
 
+#### Centralized index (Recommended cho team)
+
+Thay vì mỗi dev tự `npm run code-graph` (vài phút build full, mỗi máy 1 index lệch nhau), team setup 1 máy always-on làm "ingest worker":
+
+- **Máy host:** chạy cron `codegraph sync` mỗi 30 phút, snapshot DB sang HTTP server (Tailscale IP, port 7474). Xem `System/agent_skills/codegraph_host/README.md`.
+- **Mỗi dev:** `export CODEGRAPH_HOST=<tailscale-ip>` rồi `npm --prefix System run code-graph:fetch` → pull snapshot DB về `01_Raw/codebase/<proj>/.codegraph/codegraph.db` (atomic, idempotent).
+- **MCP query local** (Claude Code đã install) dùng DB vừa pull — không tự index lại.
+
+Fallback: nếu host down, dev vẫn dùng được `npm run code-graph` (full local rebuild) hoặc DB cũ.
+
+Lệnh:
+```bash
+npm --prefix System run code-graph:fetch       # Dev: pull snapshot DB từ host
+npm --prefix System run code-graph:host-sync   # Host: chạy thủ công (cron tự gọi)
+```
+
+Doc setup chi tiết: `System/agent_skills/codegraph_host/README.md` + `TAILSCALE_SETUP.md`.
+
 ---
 
 ## 5. Naming Convention

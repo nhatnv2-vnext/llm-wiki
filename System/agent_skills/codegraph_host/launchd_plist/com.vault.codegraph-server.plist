@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  com.vault.codegraph-server.plist
+  macOS launchd config cho HTTP server expose codegraph snapshots qua Tailscale.
+
+  Setup:
+    1. Edit 2 placeholder: REPLACE_WITH_TAILSCALE_IP + REPLACE_WITH_HOME
+       (Tailscale IP lấy bằng: tailscale ip -4)
+    2. cp com.vault.codegraph-server.plist ~/Library/LaunchAgents/
+    3. launchctl load ~/Library/LaunchAgents/com.vault.codegraph-server.plist
+    4. Verify: curl http://<TAILSCALE_IP>:7474/
+
+  Unload (stop server):
+    launchctl unload ~/Library/LaunchAgents/com.vault.codegraph-server.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.vault.codegraph-server</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>-m</string>
+    <string>http.server</string>
+    <string>7474</string>
+    <string>--bind</string>
+    <string>REPLACE_WITH_TAILSCALE_IP</string>
+    <string>--directory</string>
+    <string>REPLACE_WITH_HOME/codegraph-snapshots</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/codegraph-server.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/tmp/codegraph-server.err</string>
+</dict>
+</plist>
