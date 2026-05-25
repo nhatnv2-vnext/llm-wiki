@@ -1,0 +1,55 @@
+# CODEOWNERS — vault `My_Project_Vault`
+#
+# GitHub auto-request review từ owner khi PR đụng path tương ứng.
+# Format: <path> <handle1> <handle2> ...
+#
+# ⚠️ TODO (day-1 setup): Thay placeholder `@<role>` bằng github handle thật khi team đã có user account.
+# Trong giai đoạn solo, có thể tạm dùng `@nhatnv2-vnext` cho mọi path (xem khối "SOLO MODE" cuối file).
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+
+# Default: tech-lead review nếu không match rule nào dưới
+*                                       @<tech-lead>
+
+# ── Layer 2: Wiki (kiến thức biên dịch) ─────────────────────────────────────
+
+# API contracts → backend owns
+02_Wiki/02_API_Specs/                   @<backend-lead>
+
+# Database schema → backend owns
+02_Wiki/03_Database/                    @<backend-lead>
+
+# Screen specs → frontend + designer
+02_Wiki/06_Screen_Specs/                @<frontend-lead> @<designer>
+
+# Architecture / system overview → tech-lead
+02_Wiki/01_Architecture/                @<tech-lead> @<backend-lead> @<frontend-lead>
+
+# Dashboard / index → tech-lead (high-traffic, dễ conflict)
+02_Wiki/00_Dashboard/                   @<tech-lead>
+
+# Auto-generated (CodeGraph output) → ai cũng merge được, không cần owner cụ thể
+# (Comment-out rule để fallback về default @<tech-lead>; uncomment nếu muốn skip review)
+# 02_Wiki/05_Code_Graph/                *
+
+# Ingest plans → tech-lead approve (gate cho ingest:apply, xem CLAUDE.md §2.2)
+02_Wiki/04_Tasks_&_Logs/Ingest_Plans/   @<tech-lead>
+
+# Conflict reports → tech-lead theo dõi
+02_Wiki/04_Tasks_&_Logs/Conflict_Reports.md  @<tech-lead>
+
+# ── Layer 3: System (rule + automation) ────────────────────────────────────
+
+# Mọi thay đổi script/skill = tech-lead approve (impact toàn vault)
+System/                                 @<tech-lead>
+.claude/                                @<tech-lead>
+.github/                                @<tech-lead>
+
+# Root configs
+README.md                               @<tech-lead>
+.gitignore                              @<tech-lead>
+.gitmodules                             @<tech-lead>
+
+# ── SOLO MODE (uncomment khi 1 người làm tất cả) ───────────────────────────
+# Nếu team chưa thực sự setup, comment toàn bộ rule trên và uncomment dòng dưới:
+# *                                       @nhatnv2-vnext
