@@ -41,7 +41,7 @@ export default function Sidebar({ tree }: { tree: WikiNode[] }) {
           aria-hidden
           className="inline-block h-3 w-3 rounded-full bg-accent"
         />
-        <span className="font-serif text-lg font-semibold text-foreground">
+        <span className="text-lg font-bold tracking-tight text-foreground">
           LLM Wiki
         </span>
       </Link>

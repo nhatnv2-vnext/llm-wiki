@@ -1,17 +1,18 @@
 @import "tailwindcss";
 
-/* ===== Claude-inspired theme =====
-   Tông kem ấm, accent terracotta, serif cho heading. */
+/* ===== Anthropic theme (theo Streamlit advanced-theming-anthropic) =====
+   Light theme: nền kem #f4f3ed, accent nâu-terracotta #bb5a38,
+   font Space Grotesk (body + heading), Space Mono cho code. */
 :root {
-  --background: #faf9f5; /* kem ấm */
-  --surface: #ffffff; /* nền panel/card */
-  --surface-muted: #f0eee6; /* nền sidebar/hover nhạt */
-  --foreground: #3d3929; /* mực nâu đậm, không phải đen tuyền */
-  --muted: #6b6657; /* chữ phụ */
-  --border: #e6e2d6; /* viền ấm */
-  --accent: #d97757; /* terracotta — accent chính của Claude */
-  --accent-hover: #c2410c;
-  --accent-soft: #f5e6de; /* nền nhạt cho trạng thái active */
+  --background: #f4f3ed; /* backgroundColor — kem mềm */
+  --surface: #ffffff; /* nền card/panel */
+  --surface-muted: #eae8df; /* secondaryBackgroundColor — kem đậm hơn */
+  --foreground: #1a1a18; /* textColor — gần đen, hơi ấm */
+  --muted: #6b6759; /* chữ phụ */
+  --border: #ddd9cc; /* viền ấm */
+  --accent: #bb5a38; /* primaryColor — nâu terracotta */
+  --accent-hover: #a04a2c;
+  --accent-soft: #f0e4dd; /* nền nhạt cho hover/active */
 }
 
 @theme inline {
@@ -24,27 +25,26 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
-  --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-serif), Georgia, "Times New Roman", serif;
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #262624; /* nâu-xám than ấm */
-    --surface: #30302e;
-    --surface-muted: #1f1e1d;
-    --foreground: #f0eee6;
-    --muted: #b0aa9a;
-    --border: #3d3b37;
-    --accent: #e08a6c;
-    --accent-hover: #ec8d65;
-    --accent-soft: #3a2e28;
+    --background: #21201c; /* nâu-than ấm */
+    --surface: #2b2a25;
+    --surface-muted: #1a1916;
+    --foreground: #eceae1;
+    --muted: #a8a290;
+    --border: #3a382f;
+    --accent: #cd7a5a; /* terracotta sáng hơn cho nền tối */
+    --accent-hover: #d98a6a;
+    --accent-soft: #36281f;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }

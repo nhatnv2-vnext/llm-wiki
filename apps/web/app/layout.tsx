@@ -1,23 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Source_Serif_4 } from "next/font/google";
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
 import Sidebar from "@/components/Sidebar";
 import { getWikiTree } from "@/lib/fs-tree";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Theme Anthropic (Streamlit): Space Grotesk cho body + heading, Space Mono cho code.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// Serif cho heading — gần với cảm giác giao diện Claude.
-const sourceSerif = Source_Serif_4({
-  variable: "--font-serif",
+const spaceMono = Space_Mono({
+  variable: "--font-mono",
+  weight: ["400", "700"],
   subsets: ["latin"],
 });
 
@@ -36,7 +32,7 @@ export default async function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
         <div className="flex h-screen">

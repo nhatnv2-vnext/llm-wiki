@@ -20,7 +20,7 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
       <div>
-        <h1 className="font-serif text-4xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
           LLM Wiki Viewer
         </h1>
         <p className="mt-3 text-lg text-muted">
