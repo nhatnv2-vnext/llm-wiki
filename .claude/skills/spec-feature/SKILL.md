@@ -17,6 +17,9 @@ User gõ `/spec-feature <ID>` (vd `/spec-feature FEA_001`).
 2. Đọc `01_Raw/codebase/projects.json` → tìm `local_path` tương ứng với `project` của tính năng.
 
 ### Bước 2 — Phân tích Code Backend (Sử dụng Tool/Sub-agent)
+
+> **Công cụ ưu tiên — CodeGraph MCP.** Dùng `mcp__codegraph__*` để lần theo luồng thay vì đọc mò: tìm symbol controller/service theo tên, đi **callers/callees** từ endpoint → service → repository, dùng **impact analysis** để gom các file liên quan tới feature. Nếu CodeGraph MCP chưa sẵn sàng (`npm --prefix System run code-graph:mcp` / chưa index) → fallback Read + Grep + Glob tại `local_path`. Mọi claim kèm `file:line`.
+
 Chuyển đến `local_path` và thực hiện các nhiệm vụ đọc code sau:
 1. Mở file được trỏ tới bởi `controller_or_entry`.
 2. Khám phá luồng logic:

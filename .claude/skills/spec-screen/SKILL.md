@@ -68,7 +68,9 @@ Input:
 - project local path: <LOCAL_PATH>
 - component path: <LOCAL_PATH>/<COMPONENT>
 
-Tools cho phép: Read, Grep, Glob (read-only).
+Tools cho phép: mcp__codegraph__* (ưu tiên), Read, Grep, Glob (read-only).
+
+Ưu tiên CodeGraph MCP để tìm component/service/store theo tên và lần callers/callees, giúp tìm đúng file liên quan nhanh mà không quét cả repo. Nếu CodeGraph MCP chưa sẵn sàng → fallback Read + Grep + Glob.
 
 Task:
 1. Đọc <LOCAL_PATH>/src/app/app.routes.ts (hoặc tương đương) → xác nhận route "<URL>" map tới component nào, guard nào.

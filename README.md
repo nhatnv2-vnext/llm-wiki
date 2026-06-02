@@ -9,6 +9,29 @@ Dự án mẫu được áp dụng: **laptop-shop** (NestJS + Prisma + MySQL + B
 2. Mở file [`02_Wiki/00_Overview/Index.md`](02_Wiki/00_Overview/Index.md) (Map of Content) để có cái nhìn tổng quan.
 3. Đọc [`System/CLAUDE.md`](System/CLAUDE.md) để hiểu triết lý vận hành và quy tắc dành cho AI.
 
+### Cấu hình các công cụ AI (MCP Servers)
+
+Để AI (Claude Code) có thể đọc dữ liệu thiết kế, source code và tài liệu, bạn cần hoàn tất các cấu hình sau:
+
+1. **Figma API (Thiếu biến môi trường `FIGMA_API_KEY`):**
+   - Lấy token tại: **Figma > Settings > Personal access tokens**.
+   - Mở terminal và thêm biến môi trường (vào `~/.zshrc` hoặc `~/.bash_profile`):
+     ```bash
+     export FIGMA_API_KEY="figd_..."
+     ```
+   - *Lưu ý: Không hardcode token vào file `.mcp.json` để tránh rò rỉ bảo mật.*
+
+2. **CodeGraph & Figma (Cấp quyền hoạt động - Pending approval):**
+   - Khởi tạo index cho CodeGraph (chạy 1 lần duy nhất):
+     ```bash
+     codegraph init -i
+     ```
+   - Mở terminal, chạy lệnh `claude` (chế độ tương tác). Khi được hỏi cấp quyền cho các server trong `.mcp.json`, hãy chọn "Approve".
+   - Kiểm tra trạng thái bằng lệnh `claude mcp list` hoặc gõ `/mcp` trong Claude.
+
+3. **Google Drive (Yêu cầu xác thực OAuth):**
+   - Lần đầu sử dụng tính năng đọc tài liệu Drive, server sẽ yêu cầu đăng nhập. Hãy theo dõi thông báo trên terminal khi chạy Claude để bấm vào link xác thực.
+
 ## 🏗 Cấu trúc 3 lớp (3-Layer Architecture)
 
 Vault được thiết kế theo nguyên tắc phân tách ranh giới rõ ràng:
