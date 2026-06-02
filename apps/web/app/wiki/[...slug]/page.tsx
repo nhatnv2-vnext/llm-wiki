@@ -11,14 +11,16 @@ export default async function WikiPage({
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Wiki</h1>
-      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+      <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">
+        Wiki
+      </h1>
+      <p className="mt-3 text-muted">
         Đường dẫn yêu cầu:{" "}
-        <code className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-800">
+        <code className="rounded-md border border-border bg-surface-muted px-1.5 py-0.5 font-mono text-sm text-accent-hover">
           {wikiPath}
         </code>
       </p>
-      <p className="mt-4 text-sm text-zinc-400">
+      <p className="mt-4 text-sm text-muted">
         Trang render nội dung Markdown sẽ được triển khai ở issue tiếp theo.
       </p>
     </main>
