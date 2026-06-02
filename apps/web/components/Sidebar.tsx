@@ -2,7 +2,13 @@ import Link from "next/link";
 
 import type { WikiNode } from "@/lib/fs-tree";
 
-function TreeItems({ nodes }: { nodes: WikiNode[] }) {
+function TreeItems({
+  nodes,
+  onNavigate,
+}: {
+  nodes: WikiNode[];
+  onNavigate?: () => void;
+}) {
   return (
     <ul className="space-y-0.5">
       {nodes.map((node) =>
@@ -13,7 +19,7 @@ function TreeItems({ nodes }: { nodes: WikiNode[] }) {
             </span>
             {node.children && node.children.length > 0 && (
               <div className="ml-2 border-l border-border pl-2">
-                <TreeItems nodes={node.children} />
+                <TreeItems nodes={node.children} onNavigate={onNavigate} />
               </div>
             )}
           </li>
@@ -21,6 +27,7 @@ function TreeItems({ nodes }: { nodes: WikiNode[] }) {
           <li key={node.slug}>
             <Link
               href={`/wiki/${node.slug}`}
+              onClick={onNavigate}
               className="block rounded-lg px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent-soft hover:text-accent-hover"
             >
               {node.name}
@@ -32,11 +39,25 @@ function TreeItems({ nodes }: { nodes: WikiNode[] }) {
   );
 }
 
-/** Sidebar điều hướng, render từ cây thư mục wiki (Server Component). */
-export default function Sidebar({ tree }: { tree: WikiNode[] }) {
+/**
+ * Nội dung sidebar (header + cây điều hướng). Dùng chung cho cả sidebar
+ * desktop và drawer mobile. `onNavigate` được gọi khi bấm một link —
+ * dùng để đóng drawer trên mobile.
+ */
+export default function SidebarContent({
+  tree,
+  onNavigate,
+}: {
+  tree: WikiNode[];
+  onNavigate?: () => void;
+}) {
   return (
-    <nav className="h-full w-64 shrink-0 overflow-y-auto border-r border-border bg-surface-muted p-3">
-      <Link href="/" className="mb-4 flex items-center gap-2 px-2 pt-1">
+    <nav className="h-full overflow-y-auto bg-surface-muted p-3">
+      <Link
+        href="/"
+        onClick={onNavigate}
+        className="mb-4 flex items-center gap-2 px-2 pt-1"
+      >
         <span
           aria-hidden
           className="inline-block h-3 w-3 rounded-full bg-accent"
@@ -45,7 +66,7 @@ export default function Sidebar({ tree }: { tree: WikiNode[] }) {
           LLM Wiki
         </span>
       </Link>
-      <TreeItems nodes={tree} />
+      <TreeItems nodes={tree} onNavigate={onNavigate} />
     </nav>
   );
 }

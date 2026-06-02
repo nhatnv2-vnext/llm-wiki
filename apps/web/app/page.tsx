@@ -18,9 +18,9 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
+    <main className="mx-auto flex min-h-full max-w-2xl flex-col justify-center gap-8 px-4 py-10 sm:px-6 sm:py-16">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           LLM Wiki Viewer
         </h1>
         <p className="mt-3 text-lg text-muted">

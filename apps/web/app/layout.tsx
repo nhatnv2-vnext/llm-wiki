@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/AppShell";
 import { getWikiTree } from "@/lib/fs-tree";
 
 // Theme Anthropic (Streamlit): Space Grotesk cho body + heading, Space Mono cho code.
@@ -35,10 +35,7 @@ export default async function RootLayout({
       className={`${spaceGrotesk.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
-        <div className="flex h-screen">
-          <Sidebar tree={tree} />
-          <div className="flex-1 overflow-y-auto">{children}</div>
-        </div>
+        <AppShell tree={tree}>{children}</AppShell>
       </body>
     </html>
   );
