@@ -1,0 +1,19 @@
+{
+  "name": "my-project-vault-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo gốc — quản lý các workspace trong apps/* bằng Turborepo + pnpm.",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.16"
+  },
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=20"
+  }
+}

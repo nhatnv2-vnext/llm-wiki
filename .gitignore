@@ -10,15 +10,19 @@ Thumbs.db
 **/node_modules/
 
 # Layer 3 — runtime
-app/System/node_modules/
-app/System/*.log
+apps/System/node_modules/
+apps/System/*.log
 
 # Web app (Next.js) — build output & local env
-app/web/.next/
-app/web/out/
-app/web/next-env.d.ts
-app/web/.env*.local
-app/web/*.tsbuildinfo
+apps/web/.next/
+apps/web/out/
+apps/web/next-env.d.ts
+apps/web/.env*.local
+apps/web/*.tsbuildinfo
+
+# Turborepo
+.turbo/
+**/.turbo/
 
 # Auto-gen RAG index (rebuild bằng `npm run index-vault`)
 02_Wiki/00_Dashboard/Vault_Index.json
