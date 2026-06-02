@@ -1,32 +1,52 @@
 #!/usr/bin/env bash
-# run_codegraph.sh — Chạy CodeGraph (@colbymchenry/codegraph, MIT) lên codebase ở 01_Raw,
-# sinh `.md` skill per area sang 02_Wiki/05_Code_Graph.
+# run_codegraph.sh — Chạy CodeGraph (@colbymchenry/codegraph, MIT) lên codebase,
+# sinh `.md` skill per area sang 02_Wiki/06_Code_Graph.
 #
-# Yêu cầu: CLI `codegraph` đã cài global:
-#   npm install -g @colbymchenry/codegraph
+# ĐỌC ĐƯỜNG DẪN TỪ: 01_Raw/codebase/projects.json
+# Mỗi entry trong "projects" phải có: name, local_path, type, active.
+# Script sẽ dùng local_path để truy cập source code, KHÔNG cần mount code vào vault.
+#
+# Yêu cầu:
+#   - CLI `codegraph` đã cài global: npm install -g @colbymchenry/codegraph
+#   - CLI `jq` để parse JSON: brew install jq
 #
 # Cách dùng:
-#   bash run_codegraph.sh                  # quét toàn bộ subprojects trong 01_Raw/codebase/
-#   bash run_codegraph.sh <project_name>   # chỉ quét 1 project
+#   bash run_codegraph.sh                  # quét toàn bộ projects active trong projects.json
+#   bash run_codegraph.sh <project_name>   # chỉ quét 1 project theo name
 #
 # Output:
-#   - Index nội bộ CodeGraph: <project>/.codegraph/codegraph.db (SQLite, .gitignored)
-#   - Skill markdown: 02_Wiki/05_Code_Graph/<project>/<area>/SKILL.md
-#   - README per project: 02_Wiki/05_Code_Graph/<project>/README.md
+#   - Index nội bộ CodeGraph: <local_path>/.codegraph/codegraph.db (SQLite, .gitignored)
+#   - Skill markdown: 02_Wiki/06_Code_Graph/<project_name>/<area>/SKILL.md
+#   - README per project: 02_Wiki/06_Code_Graph/<project_name>/README.md
 
 set -euo pipefail
 
 VAULT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-CODEBASE_DIR="$VAULT_ROOT/01_Raw/codebase"
-WIKI_OUT="$VAULT_ROOT/02_Wiki/05_Code_Graph"
+PROJECTS_JSON="$VAULT_ROOT/01_Raw/codebase/projects.json"
+WIKI_OUT="$VAULT_ROOT/02_Wiki/06_Code_Graph"
 
+# ── Pre-checks ──────────────────────────────────────────────────────────
 if ! command -v codegraph >/dev/null 2>&1; then
   echo "❌ Chưa cài CLI 'codegraph'."
   echo "   Cài: npm install -g @colbymchenry/codegraph"
   exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+  echo "❌ Chưa cài CLI 'jq' (cần để parse projects.json)."
+  echo "   Cài: brew install jq"
+  exit 1
+fi
+
+if [ ! -f "$PROJECTS_JSON" ]; then
+  echo "❌ Không tìm thấy $PROJECTS_JSON"
+  echo "   Tạo file này với danh sách projects trước khi chạy."
+  exit 1
+fi
+
 mkdir -p "$WIKI_OUT"
+
+# ── Helper functions ────────────────────────────────────────────────────
 
 # Tìm "src root" của project: thử src/, src/app/, hoặc fallback root project
 detect_src_root() {
@@ -76,7 +96,7 @@ name: $area
 description: "Skill for the $area area of $proj_name ($file_count files indexed)."
 type: architecture
 source:
-  - 01_Raw/codebase/$proj_name/$area_path
+  - "local: $proj_path/$area_path"
 status: draft
 last_synced: $(date +%Y-%m-%d)
 tags:
@@ -91,15 +111,16 @@ tags:
 > Sinh tự động bởi \`codegraph context\` từ index \`.codegraph/codegraph.db\`.
 > Re-run: \`npm --prefix System run code-graph\`.
 
-**Vị trí:** \`01_Raw/codebase/$proj_name/$area_path\` — $file_count file indexed.
+**Project local path:** \`$proj_path\`
+**Vị trí:** \`$area_path\` — $file_count file indexed.
 
 $ctx
 
 ## Khám phá sâu hơn
 
-- Query symbol cụ thể: \`codegraph query "<name>" -p 01_Raw/codebase/$proj_name\`
-- Tìm callers: \`codegraph callers <symbol> -p 01_Raw/codebase/$proj_name\`
-- Impact analysis: \`codegraph impact <symbol> -p 01_Raw/codebase/$proj_name\`
+- Query symbol cụ thể: \`codegraph query "<name>" -p $proj_path\`
+- Tìm callers: \`codegraph callers <symbol> -p $proj_path\`
+- Impact analysis: \`codegraph impact <symbol> -p $proj_path\`
 - Live MCP query trong Claude Code: \`npm --prefix System run code-graph:mcp\`
 
 ## Liên kết
@@ -128,7 +149,7 @@ build_project_readme() {
 title: Code Graph — $proj_name
 type: architecture
 source:
-  - 01_Raw/codebase/$proj_name
+  - "local: $proj_path"
 status: draft
 last_synced: $(date +%Y-%m-%d)
 tags:
@@ -140,7 +161,7 @@ tags:
 # Code Graph: $proj_name
 
 Sinh bởi \`codegraph index\` + \`codegraph context\` (@colbymchenry/codegraph, MIT).
-Index nội bộ: \`01_Raw/codebase/$proj_name/.codegraph/\` (SQLite, gitignored).
+Index nội bộ: \`$proj_path/.codegraph/\` (SQLite, local only).
 Src root: \`$src_root\`.
 
 ## Skill files (per area)
@@ -148,7 +169,7 @@ $area_links
 ## Re-index
 \`\`\`bash
 npm --prefix System run code-graph             # toàn bộ projects
-npm --prefix System run code-graph -- $proj_name  # chỉ project này (qua run_codegraph.sh arg)
+npm --prefix System run code-graph -- $proj_name  # chỉ project này
 \`\`\`
 
 ## Liên kết
@@ -156,14 +177,21 @@ npm --prefix System run code-graph -- $proj_name  # chỉ project này (qua run_
 EOF
 }
 
+# ── Run cho 1 project ───────────────────────────────────────────────────
+
 run_one() {
-  local proj_path="$1"
-  local proj_name
-  proj_name="$(basename "$proj_path")"
+  local proj_name="$1"
+  local proj_path="$2"
   local out_dir="$WIKI_OUT/$proj_name"
 
+  # Validate path tồn tại
+  if [ ! -d "$proj_path" ]; then
+    echo "❌ local_path không tồn tại: $proj_path (project: $proj_name)"
+    return 1
+  fi
+
   echo "📊 Analyzing: $proj_name"
-  echo "   src: $proj_path"
+  echo "   local_path: $proj_path"
 
   # 1. Init + index (idempotent: nếu đã có .codegraph thì init no-op, index sync)
   (
@@ -199,24 +227,36 @@ run_one() {
   echo "   ✅ $count area(s) → $WIKI_OUT/$proj_name/"
 }
 
+# ── Main ────────────────────────────────────────────────────────────────
+
 if [ "${1:-}" != "" ]; then
-  TARGET="$CODEBASE_DIR/$1"
-  [ -d "$TARGET" ] || { echo "❌ Không tìm thấy $TARGET"; exit 1; }
-  run_one "$TARGET"
+  # Chạy cho 1 project cụ thể (theo name)
+  TARGET_NAME="$1"
+  TARGET_PATH=$(jq -r --arg name "$TARGET_NAME" \
+    '.projects[] | select(.name == $name and .active == true) | .local_path' \
+    "$PROJECTS_JSON")
+
+  if [ -z "$TARGET_PATH" ] || [ "$TARGET_PATH" = "null" ]; then
+    echo "❌ Không tìm thấy project '$TARGET_NAME' (active) trong $PROJECTS_JSON"
+    echo "   Các project active:"
+    jq -r '.projects[] | select(.active == true) | "   - \(.name): \(.local_path)"' "$PROJECTS_JSON"
+    exit 1
+  fi
+
+  run_one "$TARGET_NAME" "$TARGET_PATH"
 else
+  # Chạy cho toàn bộ projects active
   found=0
-  for proj in "$CODEBASE_DIR"/*/; do
-    [ -d "$proj" ] || continue
-    [ "$(basename "$proj")" = ".gitkeep" ] && continue
-    # Bỏ qua nếu chưa có code thật
-    if [ -z "$(find "$proj" -maxdepth 2 -type f ! -name '.gitkeep' -print -quit)" ]; then
-      echo "⏭  Bỏ qua $(basename "$proj") (chưa mount code)"
-      continue
-    fi
-    run_one "${proj%/}"
+  while IFS=$'\t' read -r name local_path; do
+    [ -z "$name" ] && continue
+    run_one "$name" "$local_path"
     found=$((found+1))
-  done
-  [ $found -eq 0 ] && echo "📭 Chưa có project nào trong $CODEBASE_DIR. Mount code bằng git submodule trước."
+  done < <(jq -r '.projects[] | select(.active == true) | [.name, .local_path] | @tsv' "$PROJECTS_JSON")
+
+  if [ $found -eq 0 ]; then
+    echo "📭 Chưa có project active nào trong $PROJECTS_JSON."
+    echo "   Thêm entry vào mảng 'projects' với 'active: true' và 'local_path' trỏ tới source code."
+  fi
 fi
 
 echo "✅ Done."

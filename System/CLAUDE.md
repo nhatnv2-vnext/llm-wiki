@@ -12,12 +12,30 @@ Vault được tổ chức theo **3 lớp**, AI phải tôn trọng ranh giới 
 
 | Layer | Thư mục | Quyền của AI | Mục đích |
 |-------|---------|--------------|----------|
-| **Layer 1 — Raw** | `01_Raw/` | **READ-ONLY** | Nguồn sự thật thô (code + docs gốc) |
+| **Layer 1 — Raw** | `01_Raw/` | **READ-ONLY** | Nguồn sự thật thô (config JSON + docs gốc) |
 | **Layer 2 — Wiki** | `02_Wiki/` | **READ + WRITE** | Tri thức đã biên dịch, link với nhau |
 | **Layer 3 — System** | `System/` | **READ + WRITE (có kiểm soát)** | Quy tắc, skill, automation |
 
-**Luật vàng:** AI **TUYỆT ĐỐI KHÔNG** chỉnh sửa bất cứ file nào trong `01_Raw/`.
+**Luật vàng:** AI **TUYỆT ĐỐI KHÔNG** chỉnh sửa bất cứ file nào trong `01_Raw/` (ngoại trừ update metadata `last_synced` trong Screens.json theo quy trình spec-screen).
 Nếu phát hiện code/docs bị lỗi → ghi vào `02_Wiki/04_Tasks_&_Logs/Conflict_Reports.md`.
+
+### 1.1. Cấu trúc Layer 1 (`01_Raw/`)
+
+```text
+01_Raw/
+├── codebase/
+│   └── projects.json       ← Danh sách project + local_path (KHÔNG mount code vào vault)
+├── screens/
+│   └── Screens.json        ← Catalog màn hình app + Figma node URL
+├── database/
+│   └── schemas.json        ← Link đến file schema DB (Prisma, SQL, ...)
+└── drive_docs/
+    └── .gitkeep             ← Tài liệu pull từ Google Drive (PRD, specs)
+```
+
+- **`projects.json`**: Mỗi entry có `name`, `local_path`, `type`, `active`. Scripts đọc `local_path` để truy cập source code bên ngoài vault.
+- **`Screens.json`**: Mỗi entry có `id`, `name`, `project` (liên kết với projects.json), `component`, `figma_node_url`. Dùng bởi skill `/spec-screen`.
+- **`schemas.json`**: Mỗi entry có `name`, `type` (prisma/sql/...), `local_path`, `project`, `db_engine`. Dùng cho sinh `02_Wiki/03_Database/`.
 
 ---
 
@@ -25,14 +43,16 @@ Nếu phát hiện code/docs bị lỗi → ghi vào `02_Wiki/04_Tasks_&_Logs/Co
 
 Khi được yêu cầu cập nhật wiki từ code:
 
-1. **Quét** `01_Raw/codebase/` để lấy danh sách module/service/route.
-2. **Đối chiếu** với spec/PRD trong `01_Raw/drive_docs/`.
-3. **Sinh ra** file Markdown tương ứng trong `02_Wiki/`:
-   - Code → kiến trúc → `01_Architecture/`
-   - Code → API contract → `02_API_Specs/`
-   - Code → schema → `03_Database/`
-4. **Phát hiện xung đột** giữa code thực tế và PRD → log vào `04_Tasks_&_Logs/Conflict_Reports.md`.
-5. **KHÔNG bịa**: nếu thông tin không có trong source, ghi rõ `> ⚠️ Chưa xác định từ source`.
+1. **Đọc `01_Raw/codebase/projects.json`** để lấy danh sách project + `local_path`.
+2. **Quét source code** tại `local_path` để lấy danh sách module/service/route.
+3. **Đọc `01_Raw/database/schemas.json`** để lấy path đến file schema DB → parse cho `03_Database/`.
+4. **Đối chiếu** với spec/PRD trong `01_Raw/drive_docs/`.
+5. **Sinh ra** file Markdown tương ứng trong `02_Wiki/`:
+   - Code → kiến trúc → `03_Architecture/`
+   - Code → API contract → `04_API_Specs/`
+   - Schema file → DB docs → `05_Database/`
+6. **Phát hiện xung đột** giữa code thực tế và PRD → log vào `07_Tasks_&_Logs/Conflict_Reports.md`.
+7. **KHÔNG bịa**: nếu thông tin không có trong source, ghi rõ `> ⚠️ Chưa xác định từ source`.
 
 ### 2.1. Lựa chọn parser theo ngôn ngữ
 
@@ -43,6 +63,13 @@ Khi được yêu cầu cập nhật wiki từ code:
 | Python (custom) | `ast` builtin | OK |
 
 ⚠️ **Luật cứng cho dự án Frontend/Node:** Script ingest fine-grained (vd `ingest_codebase.js`) dùng `ts-morph`. Workflow code-graph overview dùng `CodeGraph` (xem §4.1).
+
+### 2.2. Quy trình sinh Database Wiki
+
+1. Đọc `01_Raw/database/schemas.json` để lấy danh sách schema file.
+2. Với mỗi entry `active == true`, đọc file tại `local_path` (Prisma schema, SQL dump, etc.).
+3. Parse schema → sinh ER diagram + danh sách model vào `02_Wiki/05_Database/`.
+4. Frontmatter `source:` trỏ đến `01_Raw/database/schemas.json` + `local_path`.
 
 ---
 
@@ -60,7 +87,7 @@ Mỗi file trong `02_Wiki/` phải có frontmatter:
 title: <Tiêu đề con người đọc>
 type: architecture | api | schema | task | log | dashboard
 source:
-  - 01_Raw/codebase/<đường dẫn>
+  - "local: <local_path>/<đường dẫn>"
   - 01_Raw/drive_docs/<file>
 status: draft | reviewed | stale
 last_synced: YYYY-MM-DD
@@ -71,14 +98,21 @@ tags: [<tag1>, <tag2>]
 ### 3.3. Mermaid diagrams
 - Dùng Mermaid cho mọi sơ đồ (flow, ER, sequence, C4).
 - Đặt code block ```mermaid``` ngay sau heading mô tả.
-- Sơ đồ kiến trúc tổng → ở `01_Architecture/System_Overview.md`.
+- Sơ đồ kiến trúc tổng → ở `03_Architecture/System_Overview.md`.
 
 ### 3.4. Spec-driven format cho API
-File trong `02_API_Specs/` phải có 4 section:
+File trong `04_API_Specs/` phải có 4 section:
 1. **Contract** (endpoint, method, payload schema)
-2. **Source of truth** (file code, dòng số)
+2. **Source of truth** (file code tại `local_path`, dòng số)
 3. **Business rule** (link tới PRD)
 4. **Edge cases & error codes**
+
+### 3.5. Quy tắc Versioning (Archiving) BẮT BUỘC
+Khi Agent hoặc Script cập nhật một file `.md` đã tồn tại trong `02_Wiki/` (ghi đè nội dung):
+1. **TUYỆT ĐỐI KHÔNG** ghi đè ngay lập tức.
+2. Kiểm tra xem file có tồn tại không. Nếu có, tạo bản copy chuyển vào `02_Wiki/_Archive/<Thư_mục_tương_ứng>/<Tên_file>_v<YYYYMMDD_HHMMSS>.md`.
+   - Ví dụ: Cập nhật `02_Design/SCR_002_xxx.md` → Copy file cũ sang `_Archive/02_Design/SCR_002_xxx_v20260602_104500.md`.
+3. Sau đó mới ghi nội dung mới vào file gốc.
 
 ---
 
@@ -89,12 +123,12 @@ Trigger qua `package.json`:
 
 | Lệnh | Tác vụ |
 |------|--------|
-| `npm run ingest` | Quét toàn bộ codebase (ts-morph) → cập nhật `02_Wiki/` |
+| `npm run ingest` | Đọc `projects.json` → quét code tại `local_path` (ts-morph) → cập nhật `02_Wiki/` |
 | `npm run sync-drive` | Pull docs mới từ Google Drive → `01_Raw/drive_docs/` |
 | `npm run lint-specs` | Kiểm tra frontmatter |
 | `npm run audit-links` | Tìm broken wikilink + orphan note |
-| `npm run generate-graph` | Sinh lại sơ đồ Mermaid từ AST của code |
-| `npm run code-graph` | Chạy CodeGraph lên code → output Markdown sang `02_Wiki/05_Code_Graph/` |
+| `npm run generate-graph` | Đọc `projects.json` + `schemas.json` → sinh lại sơ đồ Mermaid |
+| `npm run code-graph` | Đọc `projects.json` → chạy CodeGraph tại `local_path` → output Markdown sang `02_Wiki/06_Code_Graph/` |
 | `npm run code-graph:mcp` | Start CodeGraph MCP server (Claude Code/Cursor query graph live) |
 | `npm run index-vault` | Sinh `Vault_Index.json` cho RAG |
 | `npm run stats` | Cập nhật bảng "Vault Stats" trong `Index.md` |
@@ -109,8 +143,9 @@ CodeGraph ([@colbymchenry/codegraph](https://github.com/colbymchenry/codegraph),
   npm install -g @colbymchenry/codegraph
   ```
 - **KHÔNG** clone source CodeGraph vào vault.
-- **Output**: file `.md` skill sang `02_Wiki/05_Code_Graph/<project>/<area>/SKILL.md`. Wrapper trong `System/agent_skills/run_codegraph.sh`.
-- Index nội bộ: SQLite ở `01_Raw/codebase/<project>/.codegraph/codegraph.db` — đã `.gitignore`, mỗi máy phải tự `npm run code-graph` lần đầu.
+- **Input**: `local_path` từ `01_Raw/codebase/projects.json`.
+- **Output**: file `.md` skill sang `02_Wiki/06_Code_Graph/<project>/<area>/SKILL.md`. Wrapper trong `System/agent_skills/run_codegraph.sh`.
+- Index nội bộ: SQLite ở `<local_path>/.codegraph/codegraph.db` — nằm bên ngoài vault, mỗi máy tự `npm run code-graph` lần đầu.
 
 #### Khám phá live qua MCP (thay Web UI 3D cũ)
 
@@ -123,9 +158,9 @@ CodeGraph không có Web UI 3D như GitNexus. Để Claude Code (hoặc Cursor/C
 
 CLI query trực tiếp (không cần MCP):
 ```bash
-codegraph query "<keyword>"  -p 01_Raw/codebase/<project>
-codegraph callers <symbol>   -p 01_Raw/codebase/<project>
-codegraph impact <symbol>    -p 01_Raw/codebase/<project>
+codegraph query "<keyword>"  -p <local_path>
+codegraph callers <symbol>   -p <local_path>
+codegraph impact <symbol>    -p <local_path>
 ```
 
 ---
@@ -141,8 +176,8 @@ codegraph impact <symbol>    -p 01_Raw/codebase/<project>
 ## 6. Context Engineering (theo Karpathy)
 
 Khi trả lời câu hỏi của user trong vault, AI nên:
-- **Bắt đầu từ `00_Dashboard/Index.md`** để lấy bản đồ tổng.
-- **Hoặc đọc `00_Dashboard/Vault_Index.json`** (sinh bằng `npm run index-vault`) nếu cần map nhanh title/tags/headings/wikilinks.
+- **Bắt đầu từ `00_Overview/Index.md`** để lấy bản đồ tổng.
+- **Hoặc đọc `00_Overview/Vault_Index.json`** (sinh bằng `npm run index-vault`) nếu cần map nhanh title/tags/headings/wikilinks.
 - **Đọc đủ nhưng không đọc thừa**: ưu tiên frontmatter + heading để định vị.
 - **Trích dẫn nguồn**: mọi claim phải có link tới file Layer 1 hoặc Layer 2.
 - **Khi không chắc**: thà nói "tôi cần đọc thêm `[[X]]`" còn hơn đoán.
@@ -154,10 +189,11 @@ Khi trả lời câu hỏi của user trong vault, AI nên:
 
 ### 6.2. Khi user muốn sinh spec màn hình (Figma + code)
 - Dùng slash command `/spec-screen <ID>` (file `.claude/skills/spec-screen/SKILL.md`).
-- Catalog màn hình: `02_Wiki/00_Dashboard/Screens.json` — phải có entry trước khi gọi skill.
-- Skill spawn 2 sub-agent SONG SONG: `figma-reader` (MCP Figma) + `code-reader` (Read/Grep Angular). Main agent merge output + template `_Templates/screen_spec_template.md` → ghi `02_Wiki/06_Screen_Specs/<ID>_<slug>.md`.
-- Kiến trúc tách 2 sub-agent là CỐ Ý để tiết kiệm context window (Figma metadata + Angular code đều lớn).
+- Catalog màn hình: `01_Raw/screens/Screens.json` — phải có entry trước khi gọi skill.
+- Skill đọc `01_Raw/codebase/projects.json` để lấy `local_path` cho code-reader sub-agent.
+- Skill spawn 2 sub-agent SONG SONG: `figma-reader` (MCP Figma) + `code-reader` (Read/Grep tại local_path). Main agent merge output + template `_Templates/screen_spec_template.md` → ghi `02_Wiki/02_Design/<ID>_<slug>.md`.
+- Kiến trúc tách 2 sub-agent là CỐ Ý để tiết kiệm context window (Figma metadata + code đều lớn).
 
 ---
 
-_Last updated: 2026-05-11_
+_Last updated: 2026-06-02_

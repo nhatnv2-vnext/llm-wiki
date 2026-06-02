@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "description": "Catalog các tính năng/API của dự án Backend. Dùng bởi skill /spec-feature để sinh tài liệu spec backend. Mỗi entry đại diện cho một domain hoặc API module.",
+  "schema": {
+    "id": "string, định danh duy nhất (FEA_XXX)",
+    "name": "string, tên tính năng/domain tiếng Việt",
+    "project": "string, tên project trong projects.json (vd 'nestjs-backend')",
+    "controller_or_entry": "string, đường dẫn tương đối đến file controller/handler chính",
+    "api_endpoints": "string[], danh sách các prefix hoặc route chính (vd ['GET /api/v1/users', 'POST /api/v1/users'])",
+    "related_db_schemas": "string[], danh sách các bảng/collections liên quan",
+    "status": "draft | reviewed | stale",
+    "last_synced": "YYYY-MM-DD hoặc null"
+  },
+  "features": []
+}

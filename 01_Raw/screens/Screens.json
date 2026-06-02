@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Catalog các màn hình app. Dùng bởi skill /spec-screen để sinh tài liệu spec từ Figma MCP + code. Mỗi entry map 1 màn hình với Figma node URL và component code.",
+  "schema": {
+    "id": "string, định danh duy nhất (SCR_XXX)",
+    "name": "string, tên màn hình tiếng Việt",
+    "url": "string, path route (không slash đầu, vd 'cart', 'order/:id')",
+    "project": "string, tên project trong projects.json (vd 'angular-frontend')",
+    "component": "string, đường dẫn tương đối từ src/ của project",
+    "figma_node_url": "string[], danh sách URL Figma node (có thể rỗng)",
+    "related_apis": "string[], danh sách endpoint API liên quan ('METHOD /path')",
+    "status": "draft | reviewed | stale",
+    "last_synced": "YYYY-MM-DD hoặc null"
+  },
+  "screens": []
+}

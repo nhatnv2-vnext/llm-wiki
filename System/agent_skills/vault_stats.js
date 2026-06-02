@@ -3,7 +3,7 @@
  * vault_stats.js — Đếm thống kê vault và cập nhật bảng "Vault Stats" trong Index.md.
  *
  * Đếm:
- *   - Wiki notes (trừ _Templates, 05_Code_Graph)
+ *   - Wiki notes (trừ _Templates, 06_Code_Graph, _Archive)
  *   - Code-graph SKILL.md
  *   - Wikilinks
  *   - API endpoints (heading bảng `| Method | Path |` trong 02_API_Specs)
@@ -18,7 +18,7 @@ const path = require('node:path');
 const VAULT_ROOT = path.resolve(__dirname, '..', '..');
 const WIKI = path.join(VAULT_ROOT, '02_Wiki');
 const CODEBASE = path.join(VAULT_ROOT, '01_Raw', 'codebase');
-const INDEX_MD = path.join(WIKI, '00_Dashboard', 'Index.md');
+const INDEX_MD = path.join(WIKI, '00_Overview', 'Index.md');
 
 function walk(dir, pred = () => true) {
   if (!fs.existsSync(dir)) return [];
@@ -32,9 +32,9 @@ function walk(dir, pred = () => true) {
 }
 
 const wikiFiles = walk(WIKI, (f) =>
-  f.endsWith('.md') && !f.includes('/_Templates/') && !f.includes('/05_Code_Graph/'),
+  f.endsWith('.md') && !f.includes('/_Templates/') && !f.includes('/06_Code_Graph/') && !f.includes('/_Archive/'),
 );
-const skillFiles = walk(path.join(WIKI, '05_Code_Graph'), (f) => f.endsWith('SKILL.md'));
+const skillFiles = walk(path.join(WIKI, '06_Code_Graph'), (f) => f.endsWith('SKILL.md'));
 
 let wikilinkCount = 0;
 for (const f of wikiFiles) {
@@ -44,7 +44,7 @@ for (const f of wikiFiles) {
 }
 
 // API endpoints: heading bảng có cột Method + Path
-const apiFiles = wikiFiles.filter((f) => f.includes('/02_API_Specs/'));
+const apiFiles = wikiFiles.filter((f) => f.includes('/04_API_Specs/'));
 let endpointCount = 0;
 for (const f of apiFiles) {
   const txt = fs.readFileSync(f, 'utf8');

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "description": "Danh sách project cần wiki. Scripts (run_codegraph.sh, ingest_codebase.js, generate_mermaid.js) sẽ đọc local_path để truy cập source code thay vì mount code vào vault.",
+  "schema": {
+    "name": "string — tên project (dùng làm key trong wiki, vd 'nestjs-backend')",
+    "local_path": "string — đường dẫn tuyệt đối đến thư mục source code trên máy",
+    "type": "string — loại project: nestjs | angular | nextjs | vue | python | go | other",
+    "description": "string — mô tả ngắn về project",
+    "active": "boolean — true nếu project đang cần wiki, false để tạm bỏ qua"
+  },
+  "projects": []
+}

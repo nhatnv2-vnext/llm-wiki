@@ -1,11 +1,11 @@
 ---
 name: ask-vault
-description: Tra cứu wiki trong vault (02_Wiki/) + code-graph (02_Wiki/05_Code_Graph/) + source code (01_Raw/codebase/) để trả lời câu hỏi về dự án laptop-shop (NestJS + Angular + MySQL/Prisma). Trigger khi user gõ /ask-vault, hỏi "vault có nói gì về...", "tra cứu wiki...", "module X làm gì", hoặc bất kỳ câu hỏi định tính về kiến trúc, API, schema, flow, module của dự án.
+description: Tra cứu wiki trong vault (02_Wiki/) + code-graph (02_Wiki/05_Code_Graph/) + source code (qua local_path trong 01_Raw/codebase/projects.json) để trả lời câu hỏi về dự án. Trigger khi user gõ /ask-vault, hỏi "vault có nói gì về...", "tra cứu wiki...", "module X làm gì", hoặc bất kỳ câu hỏi định tính về kiến trúc, API, schema, flow, module của dự án.
 ---
 
 # Skill: ask-vault
 
-Bạn được gọi để trả lời câu hỏi về **dự án `laptop-shop`** (NestJS + Angular + MySQL/Prisma) đã được index trong vault Obsidian.
+Bạn được gọi để trả lời câu hỏi về **dự án** đã được index trong vault Obsidian.
 
 ## Quy tắc 5 bước
 
@@ -21,7 +21,11 @@ Bạn được gọi để trả lời câu hỏi về **dự án `laptop-shop`*
 
 3. **Theo wikilink.** Mọi file wiki có section "Liên kết" hoặc link `[[...]]` ở giữa văn bản. Follow chúng để bù ngữ cảnh.
 
-4. **Khi cần code thật**, mở file trong `01_Raw/codebase/` — đường dẫn được nêu trong frontmatter `source:` hoặc trong section "Source of truth".
+4. **Khi cần code thật:**
+   - Đọc `01_Raw/codebase/projects.json` để lấy `local_path` của project liên quan.
+   - Dùng `local_path` để truy cập source code (vd: `<local_path>/src/auth/auth.controller.ts`).
+   - KHÔNG tìm code trong `01_Raw/codebase/<name>/` (cấu trúc cũ).
+   - Đọc `01_Raw/database/schemas.json` để tìm path schema DB nếu câu hỏi liên quan đến database.
 
 5. **Khi vault không có**, nói thẳng: "Wiki chưa có nội dung X. File gần nhất là [[Y]]." KHÔNG bịa đặt.
 
@@ -35,7 +39,7 @@ Bạn được gọi để trả lời câu hỏi về **dự án `laptop-shop`*
 
 **Nguồn**
 - [[<wiki_file_1>]]
-- `01_Raw/codebase/<path>:<line>` (nếu trích code)
+- `<local_path>/<path>:<line>` (nếu trích code)
 ```
 
 ## Ràng buộc
@@ -44,6 +48,8 @@ Bạn được gọi để trả lời câu hỏi về **dự án `laptop-shop`*
 - KHÔNG suy luận về module nếu không tìm thấy trong vault. Trả lời "không có trong vault" thay vì đoán.
 - Trích dẫn file:line khi có thể (vd: `auth.controller.ts:21`).
 - Đọc memory trước khi đề xuất công cụ. Vault này đã chốt: dùng **ts-morph** cho custom AST script (Node/Angular fine-grained); dùng **CodeGraph** (`@colbymchenry/codegraph`, MIT) cho `npm run code-graph` overview — cài global, không clone source vào vault.
+- Source code nằm bên ngoài vault, truy cập qua `local_path` trong `01_Raw/codebase/projects.json`.
+- Database schema nằm bên ngoài vault, truy cập qua `local_path` trong `01_Raw/database/schemas.json`.
 
 ## Ví dụ
 
@@ -51,8 +57,9 @@ Bạn được gọi để trả lời câu hỏi về **dự án `laptop-shop`*
 >
 > 1. Đọc `Vault_Index.json` → tìm entry có tag `auth` → `Auth_API.md` + `Frontend_Overview.md` (auth interceptor).
 > 2. Đọc 2 file → tổng hợp: endpoint backend + interceptor flow frontend.
-> 3. Trích `01_Raw/codebase/nestjs-backend/src/auth/auth.controller.ts:21` cho `POST /auth/login`.
-> 4. Trả lời theo format trên.
+> 3. Đọc `projects.json` → project "nestjs-backend" → local_path="/Users/.../laptop-shop".
+> 4. Trích `<local_path>/src/auth/auth.controller.ts:21` cho `POST /auth/login`.
+> 5. Trả lời theo format trên.
 
 > User: "Hệ thống có deploy lên k8s không?"
 >

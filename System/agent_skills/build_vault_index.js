@@ -13,9 +13,9 @@ const path = require('node:path');
 
 const VAULT_ROOT = path.resolve(__dirname, '..', '..');
 const WIKI = path.join(VAULT_ROOT, '02_Wiki');
-const OUT = path.join(WIKI, '00_Dashboard', 'Vault_Index.json');
+const OUT = path.join(WIKI, '00_Overview', 'Vault_Index.json');
 
-const SKIP = ['_Templates', '05_Code_Graph'];
+const SKIP = ['_Templates', '06_Code_Graph', '_Archive'];
 
 function walk(dir) {
   const out = [];

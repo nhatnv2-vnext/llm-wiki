@@ -2,8 +2,8 @@
 title: "<name>"
 type: screen-spec
 source:
-  - "02_Wiki/00_Dashboard/Screens.json#<id>"
-  - "01_Raw/codebase/angular-frontend/<component>"
+  - "01_Raw/screens/Screens.json#<id>"
+  - "local: <local_path>/<component>"
   - "figma: <figma_node_url>"
 status: draft
 last_synced: "<YYYY-MM-DD>"
@@ -19,7 +19,7 @@ _(1-3 dòng: vai trò màn hình, user chính, kết quả mong đợi)_
 
 ## Route & Component
 - **Route**: `/<url>`
-- **Component**: [`<component>`](../../01_Raw/codebase/angular-frontend/<component>)
+- **Component**: `<component>` (project: `<project>`, local: `<local_path>`)
 - **Guard**: _(authGuard / guestOnlyGuard / public)_
 - **Lazy load**: _(yes/no)_
 
@@ -57,10 +57,11 @@ _(Bullet từ code-reader: signal/store/selector + endpoint API gọi)_
 - **Validation**: …
 
 ## Source of truth
-- Component code: `01_Raw/codebase/angular-frontend/<component>`
-- Route definition: `01_Raw/codebase/angular-frontend/src/app/app.routes.ts`
+- Component code: `<local_path>/<component>`
+- Route definition: `<local_path>/src/app/app.routes.ts`
 - Figma: <figma_node_url>
 - API contract: _(link wiki [[XYZ_API]])_
+- DB schema: xem `01_Raw/database/schemas.json`
 
 ## Liên kết
 - [[Index]]

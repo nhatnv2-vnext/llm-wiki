@@ -1,0 +1,206 @@
+{
+  "generated": "2026-06-02T04:30:00.752Z",
+  "count": 8,
+  "entries": [
+    {
+      "path": "02_Wiki/00_Overview/Index.md",
+      "basename": "Index",
+      "title": "\"Mục lục Dự án\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📚 Mục lục Dự án (Wiki Index)",
+        "🗺️ Bản đồ Tri thức (Map of Content)",
+        "1. 🏗️ Kiến trúc & Tổng quan (`03_Architecture/`)",
+        "2. 🖥️ Giao diện Frontend (`02_Design/`)",
+        "3. ⚙️ APIs & Logic Backend (`04_API_Specs/`)",
+        "4. 🗄️ Cơ sở dữ liệu (`05_Database/`)",
+        "5. 🔍 Phân tích mã nguồn (`06_Code_Graph/`)",
+        "6. 📝 Quản lý công việc & Vận hành (`07_Tasks_&_Logs/`)",
+        "📊 Vault Stats",
+        "🚀 Lệnh nhanh (NPM Scripts)"
+      ],
+      "links": [
+        "03_Architecture/README",
+        "02_Design/README",
+        "02_Design/SCR_XXX_<slug>",
+        "04_API_Specs/README",
+        "04_API_Specs/FEA_XXX_<slug>",
+        "05_Database/README",
+        "06_Code_Graph/README",
+        "07_Tasks_&_Logs/README"
+      ],
+      "size": 3027
+    },
+    {
+      "path": "02_Wiki/00_Overview/README.md",
+      "basename": "README",
+      "title": "\"Hướng dẫn thư mục: 00_Overview\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📂 Thư mục: 00_Overview (Tổng quan & Dashboard)",
+        "🎯 Tác dụng & Vai trò",
+        "🗂️ Các thông tin chứa đựng",
+        "📐 Cấu trúc & Quy tắc Định dạng",
+        "1. File `Index.md`",
+        "2. Định dạng Frontmatter Mẫu",
+        "🔗 Liên kết Hữu ích"
+      ],
+      "links": [
+        "Thư_mục/README",
+        "Index"
+      ],
+      "size": 1919
+    },
+    {
+      "path": "02_Wiki/01_Business/README.md",
+      "basename": "README",
+      "title": "\"Hướng dẫn thư mục: 01_Business\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📂 Thư mục: 01_Business (Nghiệp vụ & Đặc tả sản phẩm)",
+        "🎯 Tác dụng & Vai trò",
+        "🗂️ Các thông tin chứa đựng",
+        "📐 Cấu trúc & Quy tắc Định dạng",
+        "1. Cấu trúc File Đặc tả Nghiệp vụ",
+        "2. Định dạng Frontmatter Mẫu",
+        "🔗 Liên kết Hữu ích"
+      ],
+      "links": [
+        "Index",
+        "02_Design/README",
+        "04_API_Specs/README"
+      ],
+      "size": 2399
+    },
+    {
+      "path": "02_Wiki/02_Design/README.md",
+      "basename": "README",
+      "title": "\"Hướng dẫn thư mục: 02_Design\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📂 Thư mục: 02_Design (Thiết kế giao diện & Screen Specs)",
+        "🎯 Tác dụng & Vai trò",
+        "🗂️ Các thông tin chứa đựng",
+        "📐 Cấu trúc & Quy tắc Định dạng",
+        "1. Quy trình sinh tài liệu tự động (AI Skill)",
+        "2. Định dạng Frontmatter Mẫu",
+        "🔗 Liên kết Hữu ích"
+      ],
+      "links": [
+        "Index",
+        "02_Wiki/_Templates/screen_spec_template",
+        "04_API_Specs/README"
+      ],
+      "size": 2222
+    },
+    {
+      "path": "02_Wiki/03_Architecture/README.md",
+      "basename": "README",
+      "title": "\"Hướng dẫn thư mục: 03_Architecture\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📂 Thư mục: 03_Architecture (Kiến trúc Hệ thống)",
+        "🎯 Tác dụng & Vai trò",
+        "🗂️ Các thông tin chứa đựng",
+        "📐 Cấu trúc & Quy tắc Định dạng",
+        "1. Quy tắc Vẽ Sơ đồ (Mermaid Guidelines)",
+        "2. Định dạng Frontmatter Mẫu",
+        "🔗 Liên kết Hữu ích"
+      ],
+      "links": [
+        "Index",
+        "04_API_Specs/README",
+        "05_Database/README"
+      ],
+      "size": 2584
+    },
+    {
+      "path": "02_Wiki/04_API_Specs/README.md",
+      "basename": "README",
+      "title": "\"Hướng dẫn thư mục: 04_API_Specs\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📂 Thư mục: 04_API_Specs (Đặc tả APIs & Backend Features)",
+        "🎯 Tác dụng & Vai trò",
+        "🗂️ Các thông tin chứa đựng",
+        "📐 Cấu trúc & Quy tắc Định dạng",
+        "1. Cấu trúc 4 phần bắt buộc",
+        "2. Hướng dẫn sinh tự động (AI Skill)",
+        "3. Định dạng Frontmatter Mẫu",
+        "🔗 Liên kết Hữu ích"
+      ],
+      "links": [
+        "01_Business/README",
+        "Index",
+        "02_Design/README",
+        "05_Database/README"
+      ],
+      "size": 2771
+    },
+    {
+      "path": "02_Wiki/05_Database/README.md",
+      "basename": "README",
+      "title": "\"Hướng dẫn thư mục: 05_Database\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📂 Thư mục: 05_Database (Cơ sở dữ liệu & Schema Specs)",
+        "🎯 Tác dụng & Vai trò",
+        "🗂️ Các thông tin chứa đựng",
+        "📐 Cấu trúc & Quy tắc Định dạng",
+        "1. Quy trình sinh dữ liệu tự động (Automation)",
+        "2. Sơ đồ thực thể mối quan hệ (ERD Mẫu)",
+        "3. Định dạng Frontmatter Mẫu",
+        "🔗 Liên kết Hữu ích"
+      ],
+      "links": [
+        "Index",
+        "04_API_Specs/README",
+        "03_Architecture/README"
+      ],
+      "size": 2740
+    },
+    {
+      "path": "02_Wiki/07_Tasks_&_Logs/README.md",
+      "basename": "README",
+      "title": "\"Hướng dẫn thư mục: 07_Tasks_&_Logs\"",
+      "type": "dashboard",
+      "tags": [],
+      "status": "reviewed",
+      "last_synced": "\"2026-06-02\"",
+      "headings": [
+        "📂 Thư mục: 07_Tasks_&_Logs (Nhiệm vụ & Nhật ký vận hành)",
+        "🎯 Tác dụng & Vai trò",
+        "🗂️ Các thông tin chứa đựng",
+        "📐 Cấu trúc & Quy tắc Định dạng",
+        "1. Báo cáo Xung đột (`Conflict_Reports.md`)",
+        "2. Định dạng Frontmatter Mẫu",
+        "🔗 Liên kết Hữu ích"
+      ],
+      "links": [
+        "Index"
+      ],
+      "size": 2256
+    }
+  ]
+}

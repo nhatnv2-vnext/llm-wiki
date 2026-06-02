@@ -15,7 +15,7 @@ echo "🔍 Linting wiki files in: $WIKI_DIR"
 while IFS= read -r -d '' file; do
   # Bỏ qua output auto-generated và template Obsidian.
   case "$file" in
-    *"/05_Code_Graph/"*) continue ;;
+    *"/06_Code_Graph/"* | *"/_Archive/"*) continue ;;
     *"/_Templates/"*) continue ;;
   esac
 

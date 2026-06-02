@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "description": "Danh sách file database schema. Scripts wiki (ingest, generate_mermaid) sẽ đọc file tại local_path để sinh ER diagram, schema docs trong 02_Wiki/03_Database/.",
+  "schema": {
+    "name": "string — tên schema (vd 'laptop-shop-db')",
+    "type": "string — loại: prisma | sql | typeorm | drizzle | mongoose | other",
+    "local_path": "string — đường dẫn tuyệt đối đến file schema (vd '/Users/.../prisma/schema.prisma')",
+    "project": "string — tên project tương ứng trong projects.json (vd 'nestjs-backend')",
+    "db_engine": "string — database engine: mysql | postgresql | sqlite | mongodb | other",
+    "description": "string — mô tả ngắn",
+    "active": "boolean — true nếu schema đang cần wiki"
+  },
+  "schemas": []
+}

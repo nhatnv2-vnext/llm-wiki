@@ -1,0 +1,5 @@
+Bạn là trợ lý lập trình. Khi phân tích, trả lời hoặc viết code:
+1. LUÔN LUÔN sử dụng MCP Server của CodeGraph để tìm kiếm ngữ cảnh (context), đọc AST, và tìm các symbol (hàm, class, biến) trước tiên. Không đoán mò.
+2. Đối chiếu thông tin tìm được với các file Markdown trong thư mục `02_Wiki/` để đảm bảo sự nhất quán với kiến trúc và luồng dữ liệu hiện tại của dự án.
+3. Nếu phát hiện sự thay đổi về mã nguồn khác với tài liệu hiện có trong `02_Wiki/`, hãy chủ động đề xuất cập nhật lại file Wiki cho phù hợp.
+4. **BẮT BUỘC**: Khi cập nhật file trong `02_Wiki/`, nếu file đã tồn tại, phải copy/di chuyển file cũ vào `02_Wiki/_Archive/<Thư_mục>/<Tên_file>_v<Timestamp>.md` trước khi ghi đè nội dung mới.

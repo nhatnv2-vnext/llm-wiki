@@ -4,7 +4,7 @@
  *
  * Báo cáo:
  *   - Broken wikilinks: [[Target]] mà không tìm thấy file `Target.md` trong vault.
- *   - Orphan notes: file .md không có inbound link (trừ Index.md, README.md, file trong _Templates / 05_Code_Graph).
+ *   - Orphan notes: file .md không có inbound link (trừ Index.md, README.md, file trong _Templates / 06_Code_Graph / _Archive).
  *
  * Exit code:
  *   0 nếu sạch (vẫn list orphan như warning)
@@ -16,7 +16,7 @@ const path = require('node:path');
 const VAULT_ROOT = path.resolve(__dirname, '..', '..');
 const WIKI = path.join(VAULT_ROOT, '02_Wiki');
 
-const SKIP_DIRS = ['_Templates', '05_Code_Graph'];
+const SKIP_DIRS = ['_Templates', '06_Code_Graph', '_Archive'];
 const ROOT_NOTES = new Set(['Index', 'README']);
 
 function walk(dir) {
