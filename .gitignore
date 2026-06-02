@@ -13,6 +13,13 @@ Thumbs.db
 System/node_modules/
 System/*.log
 
+# Web app (Next.js) — build output & local env
+web/.next/
+web/out/
+web/next-env.d.ts
+web/.env*.local
+web/*.tsbuildinfo
+
 # Auto-gen RAG index (rebuild bằng `npm run index-vault`)
 02_Wiki/00_Dashboard/Vault_Index.json
 
