@@ -1,2 +1,8 @@
 packages:
   - "apps/*"
+
+# Cho phép các package này chạy build script (postinstall) khi cài đặt.
+# Tương đương việc duyệt qua `pnpm approve-builds`.
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
