@@ -1,13 +1,31 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import type { WikiNode } from "@/lib/fs-tree";
+
+/** So khớp pathname hiện tại với slug của một file (đã decode để khớp dấu). */
+function useIsActive() {
+  const pathname = usePathname();
+  // pathname có thể bị encode (vd %C3%A9) -> decode để so với slug gốc.
+  let decoded = pathname;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    // giữ nguyên nếu decode lỗi
+  }
+  return (href: string) => decoded === href;
+}
 
 function TreeItems({
   nodes,
   onNavigate,
+  isActive,
 }: {
   nodes: WikiNode[];
   onNavigate?: () => void;
+  isActive: (href: string) => boolean;
 }) {
   return (
     <ul className="space-y-0.5">
@@ -22,7 +40,11 @@ function TreeItems({
             </span>
             {node.children && node.children.length > 0 && (
               <div className="ml-2 border-l border-border pl-2">
-                <TreeItems nodes={node.children} onNavigate={onNavigate} />
+                <TreeItems
+                  nodes={node.children}
+                  onNavigate={onNavigate}
+                  isActive={isActive}
+                />
               </div>
             )}
           </li>
@@ -32,7 +54,12 @@ function TreeItems({
               href={`/wiki/${node.slug}`}
               onClick={onNavigate}
               title={node.name}
-              className="block truncate rounded-lg px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent-soft hover:text-accent-hover"
+              aria-current={isActive(`/wiki/${node.slug}`) ? "page" : undefined}
+              className={`block truncate rounded-lg px-2.5 py-1.5 text-sm transition-colors ${
+                isActive(`/wiki/${node.slug}`)
+                  ? "bg-accent-soft font-medium text-accent-hover"
+                  : "text-foreground/80 hover:bg-accent-soft hover:text-accent-hover"
+              }`}
             >
               {node.name}
             </Link>
@@ -55,6 +82,7 @@ export default function SidebarContent({
   tree: WikiNode[];
   onNavigate?: () => void;
 }) {
+  const isActive = useIsActive();
   return (
     <nav className="h-full overflow-y-auto overflow-x-hidden bg-surface-muted p-3">
       <Link
@@ -73,12 +101,17 @@ export default function SidebarContent({
       <Link
         href="/graph"
         onClick={onNavigate}
-        className="mb-2 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent-soft hover:text-accent-hover"
+        aria-current={isActive("/graph") ? "page" : undefined}
+        className={`mb-2 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${
+          isActive("/graph")
+            ? "bg-accent-soft font-medium text-accent-hover"
+            : "text-foreground/80 hover:bg-accent-soft hover:text-accent-hover"
+        }`}
       >
         <span aria-hidden>🕸️</span>
         Đồ thị wiki
       </Link>
-      <TreeItems nodes={tree} onNavigate={onNavigate} />
+      <TreeItems nodes={tree} onNavigate={onNavigate} isActive={isActive} />
     </nav>
   );
 }
