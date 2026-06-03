@@ -2,9 +2,72 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import type { WikiNode } from "@/lib/fs-tree";
+
+// --- Store cho trạng thái thư mục đang đóng (lưu localStorage) -----------------
+// Dùng useSyncExternalStore để server và client-đầu-tiên cùng dùng snapshot
+// "mở hết" -> không hydration mismatch; sau hydration React tự đồng bộ.
+
+const CLOSED_KEY = "sidebarClosedDirs";
+const EMPTY = "[]";
+let closedCache: { raw: string; set: Set<string> } = {
+  raw: EMPTY,
+  set: new Set(),
+};
+const listeners = new Set<() => void>();
+
+function readClosedRaw(): string {
+  try {
+    return window.localStorage.getItem(CLOSED_KEY) ?? EMPTY;
+  } catch {
+    return EMPTY;
+  }
+}
+
+function getClosedSet(): Set<string> {
+  const raw = readClosedRaw();
+  // Cache theo chuỗi raw để getSnapshot trả về cùng tham chiếu khi không đổi.
+  if (raw !== closedCache.raw) {
+    try {
+      closedCache = { raw, set: new Set<string>(JSON.parse(raw)) };
+    } catch {
+      closedCache = { raw, set: new Set() };
+    }
+  }
+  return closedCache.set;
+}
+
+const SERVER_SNAPSHOT = new Set<string>(); // server: mở hết
+
+function subscribeClosed(cb: () => void) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+
+function toggleClosedDir(slug: string) {
+  const cur = getClosedSet();
+  const next = new Set(cur);
+  if (next.has(slug)) next.delete(slug);
+  else next.add(slug);
+  try {
+    window.localStorage.setItem(CLOSED_KEY, JSON.stringify([...next]));
+  } catch {
+    // bỏ qua nếu localStorage không khả dụng
+  }
+  closedCache = { raw: readClosedRaw(), set: next };
+  listeners.forEach((l) => l());
+}
+
+/** Hook: trả về Set slug thư mục đang đóng (đồng bộ SSR/CSR an toàn). */
+function useClosedDirs(): Set<string> {
+  return useSyncExternalStore(
+    subscribeClosed,
+    getClosedSet,
+    () => SERVER_SNAPSHOT,
+  );
+}
 
 /** So khớp pathname hiện tại với slug của một file (đã decode để khớp dấu). */
 function useIsActive() {
@@ -117,27 +180,10 @@ export default function SidebarContent({
 }) {
   const isActive = useIsActive();
 
-  // Tập slug thư mục ĐANG ĐÓNG (mặc định mở hết). Lưu localStorage.
-  const [closed, setClosed] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const raw = window.localStorage.getItem("sidebarClosedDirs");
-      return new Set<string>(raw ? JSON.parse(raw) : []);
-    } catch {
-      return new Set();
-    }
-  });
-
+  // Trạng thái đóng/mở thư mục — qua external store (an toàn hydration).
+  const closed = useClosedDirs();
   const isOpen = (slug: string) => !closed.has(slug);
-  const toggleDir = (slug: string) => {
-    setClosed((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
-      localStorage.setItem("sidebarClosedDirs", JSON.stringify([...next]));
-      return next;
-    });
-  };
+  const toggleDir = toggleClosedDir;
 
   return (
     <nav className="h-full overflow-y-auto overflow-x-hidden bg-surface-muted p-3">
