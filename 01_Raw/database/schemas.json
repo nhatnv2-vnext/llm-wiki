@@ -10,5 +10,15 @@
     "description": "string — mô tả ngắn",
     "active": "boolean — true nếu schema đang cần wiki"
   },
-  "schemas": []
+  "schemas": [
+    {
+      "name": "laptop-shop-db",
+      "type": "prisma",
+      "local_path": "/Users/nhatnguyen/Documents/Github/code-demo/laptop-shop/prisma/schema.prisma",
+      "project": "laptop-shop",
+      "db_engine": "mysql",
+      "description": "Schema Prisma của laptop-shop (12 model: User/Role/Permission, Product/Cart/Order, EmailQueue/CronjobLog).",
+      "active": true
+    }
+  ]
 }

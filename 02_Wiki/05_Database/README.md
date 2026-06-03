@@ -68,6 +68,9 @@ tags:
 ---
 ```
 
+## 📑 Tài liệu schema đã có
+- [[05_Database/laptop_shop_db_Schema|laptop-shop DB (Prisma/MySQL)]] — ERD + từ điển dữ liệu 12 bảng.
+
 ## 🔗 Liên kết Hữu ích
 - [[Index]] — Quay lại Trang chủ chính.
 - [[04_API_Specs/README|Đặc tả API & Logic]] — Các API thực hiện truy vấn và thay đổi dữ liệu trên các bảng này.
