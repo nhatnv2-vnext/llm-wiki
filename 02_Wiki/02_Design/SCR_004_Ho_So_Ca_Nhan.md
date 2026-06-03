@@ -6,47 +6,58 @@ source:
   - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop-angular/src/app/client/profile/profile.component.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [screen, frontend, angular, profile, user, placeholder]
+tags: [screen, frontend, angular, profile, user]
 ---
 
 # Hồ sơ cá nhân · SCR_004
 
-> Nguồn: code-reader (không có Figma node). Mọi claim kèm `file:line`.
+> Nguồn: CodeGraph MCP + code-reader (không có Figma node). Mọi claim kèm `file:line`.
 
 ## Tổng quan màn hình
 
-Hồ sơ cá nhân (`/profile`) hiện là **placeholder** ("Trang ho so đang được phát triển"). Yêu cầu đăng nhập (`authGuard`). Chỉ hiển thị email của user hiện tại lấy từ `AuthService`; chưa có form chỉnh sửa hay API riêng.
+Màn hình hồ sơ cá nhân (`/profile`) hiển thị thông tin tài khoản đăng nhập. Hiện ở trạng thái **placeholder / đang phát triển**: chỉ hiển thị email và nút quay về trang chủ.
 
-- Route: `path: 'profile'`, `canActivate: [authGuard]`, lazy `loadComponent`. `app.routes.ts:21-25`
-- Component standalone, `OnPush`, không có `ngOnInit`, không inject `HttpClient`. `profile.component.ts:8-27`
-- Liên quan: [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý người dùng]], [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc Frontend]], [[02_Design/SCR_005_Lich_Su_Don_Hang|Lịch sử đơn hàng]], [[02_Design/SCR_002_Dang_Nhap|Đăng nhập]].
+- Route: `path: 'profile'` → `ProfileComponent`, lazy, guard `authGuard`. `app.routes.ts:22-24`
+- Component standalone, `ChangeDetectionStrategy.OnPush`, **không có** `OnInit`. `profile.component.ts:11,25`
 
-## Thành phần UI chính
+> ⚠️ Màn hình mới là khung; template ghi rõ "Trang ho so đang được phát triển." `profile.component.ts:18`
 
-| Thành phần | Mô tả | file:line |
-|---|---|---|
-| `app-client-header` | Header chung; `[cartCount]="0"` hard-code (không đồng bộ giỏ thật) | `profile.component.ts:13` |
-| Khối nội dung | "Tai khoan", hiển thị `currentUser()?.email`, thông báo đang phát triển | `profile.component.ts:15-20` |
-| Nút "Quay về trang chủ" | `routerLink="/"` | `profile.component.ts:19` |
-| `app-client-footer` | Footer chung | `profile.component.ts:22` |
+## Thành phần UI
+
+- `app-client-header` với `[user]="authService.currentUser()"`, `[cartCount]="0"` (hard-code 0). `profile.component.ts:13`
+- Tiêu đề "Tai khoan" + dòng email `authService.currentUser()?.email`. `profile.component.ts:16-17`
+- Link `routerLink="/"` quay về trang chủ. `profile.component.ts:19`
+- `app-client-footer`. `profile.component.ts:22`
 
 ## Luồng tương tác
 
-- Không có handler/method nào ngoài binding hiển thị. Chỉ đọc `authService.currentUser()`. `profile.component.ts:17`
-- Điều hướng duy nhất: link về `/`. `profile.component.ts:19`
+1. Component render trực tiếp từ signal `authService.currentUser()` — không có lifecycle hook fetch riêng. `profile.component.ts:13,17`
+2. Dữ liệu user được nạp upstream bởi `ClientHeaderComponent` (gọi `fetchCurrentUser` nếu có token mà chưa có user). `client-header.component.ts:232-239`
+3. Bấm link → điều hướng `/`. `profile.component.ts:19`
 
-## API / service gọi tới
+## Service / API gọi tới
 
-| Method | Path | Mục đích | file:line |
-|---|---|---|---|
-| (none trực tiếp) | — | Component không tự gọi HTTP | `profile.component.ts:25-27` |
-| (gián tiếp) | `AuthService` cung cấp `currentUser` (đã hydrate từ GET `/api/v1/users/me`) | Hiển thị email | `profile.component.ts:17`, `auth.service.ts:60,108` |
+| Hành động | Method + Path | file:line |
+|---|---|---|
+| Đọc user hiện tại (signal) | `AuthService.currentUser` (NgRx selector) | `profile.component.ts:17` |
+| (gián tiếp) Tải hồ sơ | `GET /api/v1/users/me` qua header component | `auth.service.ts:108`, `client-header.component.ts:238` |
 
-→ Backend liên quan (khi phát triển đầy đủ): [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý người dùng]].
+> Component **không tự gọi HTTP**; toàn bộ dữ liệu đến từ AuthService signal.
 
-## State / dữ liệu
+## Component gọi service nào (CodeGraph callees)
 
-- Không có signal cục bộ. Chỉ phụ thuộc `authService.currentUser` (signal từ NgRx `selectCurrentUser`). `profile.component.ts:26`, `auth.service.ts:60`
-- `User` model: `{ id, username, email, fullName?, avatar?, address?, phone?, role? }`. `shared/models/index.ts:23-32`
+- `ProfileComponent` chỉ `inject(AuthService)` và đọc signal `currentUser`. `profile.component.ts:26`
+- CodeGraph explore: file profile chỉ chứa `ProfileComponent(class)` + `authService(method)`, không có cạnh HTTP call — xác nhận là màn hình placeholder. `profile.component.ts:1-27`
+- `AuthService.currentUser` = `toSignal(store.select(selectCurrentUser))`. `auth.service.ts:60`
 
-> ⚠️ Cần human review: màn hình là placeholder chưa hoàn thiện. `cartCount` bị hard-code = 0 nên badge giỏ trong header không phản ánh số thực. `profile.component.ts:13`. Các field `fullName/address/phone` đã có trong model nhưng chưa được hiển thị/chỉnh sửa.
+## State
+
+- Không có signal nội bộ riêng. Chỉ đọc `authService.currentUser()` (NgRx auth). `profile.component.ts:26`, `auth.service.ts:60`
+- `cartCount` truyền cứng `0` cho header (khác các màn khác đọc `totalItemsInCart`). `profile.component.ts:13`
+
+## Liên kết
+
+- Backend: [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Người dùng]], [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực]]
+- Màn hình: [[02_Design/SCR_005_Lich_Su_Don_Hang|Lịch sử đơn hàng]]
+- Kiến trúc: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc FE]]
+- Code graph: [[06_Code_Graph/laptop-shop-angular/client/SKILL|Code Graph client]]

@@ -3,48 +3,54 @@ title: "Trang lỗi 404 · SCR_008"
 type: screen-spec
 project: laptop-shop-angular
 source:
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop-angular/src/app/error/error-404.component.ts"
+  - "local: src/app/error/error-404.component.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [screen-spec, error, static, laptop-shop-angular]
+tags:
+  - screen-spec
+  - laptop-shop-angular
+  - error
+  - static
 ---
 
 # Trang lỗi 404 · SCR_008
 
-> Route: `404` (+ wildcard `**` redirect) · Component: `src/app/error/error-404.component.ts` · Guard: không (lazy)
+## Tổng quan
 
-Liên quan: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc Frontend]]
+Trang tĩnh hiển thị khi người dùng truy cập một route không tồn tại. Đây là màn hình lỗi đơn giản, không gọi API, không có state động.
 
-## 1. Tổng quan
+- Route trực tiếp: `404` (`src/app/app.routes.ts:64-65`).
+- **Wildcard** `**` redirect về `/404` cho mọi đường dẫn không khớp (`src/app/app.routes.ts:78-79`) — đây là cách màn hình thường được kích hoạt.
+- Component standalone `Error404Component` (`error-404.component.ts:116`), `ChangeDetectionStrategy.OnPush`. Lazy-loaded.
 
-Trang thông báo "Không tìm thấy" hiển thị khi người dùng truy cập URL không tồn tại. Đây là màn hình tĩnh, không gọi API, không state động.
+## Thành phần UI
 
-- Route `404` khai báo tại `app.routes.ts:62-66`, lazy-loaded.
-- Wildcard `**` redirect về `/404` (`app.routes.ts:77-80`) — mọi route không khớp đều rơi vào đây.
-- Component standalone, `OnPush`, chỉ import `CommonModule` + `RouterLink` (`error-404.component.ts:5-8`).
+- **Ảnh lỗi**: `/admin/assets/img/error-404-monochrome.svg` (`error-404.component.ts:34-38`).
+- **Thông điệp**: "Oops! Trang không tồn tại." + dòng mô tả phụ (`error-404.component.ts:39-44`).
+- **CTA "Về trang chủ"**: `<a routerLink="/">` (`error-404.component.ts:46-49`).
+- **CTA "Quay lại"**: `<button (click)="goBack()">` (`error-404.component.ts:50-53`).
+- **Footer** copyright Laptopshop (`error-404.component.ts:62-74`).
 
-## 2. Thành phần UI chính
+## Luồng tương tác
 
-| Vùng | Mô tả | Vị trí |
-|---|---|---|
-| Ảnh lỗi | `error-404-monochrome.svg` | `error-404.component.ts:34-38` |
-| Thông điệp | "Oops! Trang không tồn tại." + mô tả | `error-404.component.ts:39-44` |
-| Nút "Về trang chủ" | `routerLink="/"` | `error-404.component.ts:46-49` |
-| Nút "Quay lại" | Gọi `goBack()` | `error-404.component.ts:50-53` |
-| Footer | Copyright + link chính sách/điều khoản (href `#`) | `error-404.component.ts:62-74` |
+1. Người dùng vào một URL sai → wildcard route redirect tới `/404` → render `Error404Component`.
+2. Bấm **Về trang chủ** → `routerLink="/"` điều hướng về `SCR_001` (trang chủ).
+3. Bấm **Quay lại** → `goBack()` gọi `window.history.back()` (`error-404.component.ts:117-119`).
 
-## 3. Luồng tương tác
+## Service / API gọi tới
 
-1. Người dùng vào URL không hợp lệ → wildcard redirect → màn 404.
-2. Nhấn "Về trang chủ" → điều hướng `/` qua `RouterLink`.
-3. Nhấn "Quay lại" → `goBack()` (`error-404.component.ts:117-119`) gọi `window.history.back()`.
+Không có. Component thuần tĩnh, không inject `HttpClient` hay service nào.
 
-## 4. API / service gọi tới
+### Component gọi service nào (từ codegraph_callees)
 
-Không có. Màn hình hoàn toàn tĩnh, không inject service, không HTTP.
+Theo CodeGraph, `Error404Component` chỉ có một method `goBack` (`error-404.component.ts:117`) gọi API trình duyệt `window.history.back()` — **không có callee tới service/HTTP nào** trong đồ thị. Imports duy nhất: `CommonModule`, `RouterLink` (`error-404.component.ts:2-3`).
 
-## 5. State / dữ liệu
+## State
 
-Không có signal/state. Logic duy nhất là phương thức `goBack()` dựa trên history của trình duyệt.
+Không có state. Component không khai báo signal, không có `@Input`/`@Output`, không lifecycle hook (không `OnInit`). Toàn bộ nội dung là template tĩnh.
 
-> ⚠️ Cần human review: template nhúng cả khối `<!DOCTYPE html><html><head>...` bên trong inline template Angular (`error-404.component.ts:10-78`) — bất thường về cấu trúc, nên xác nhận có gây render lồng `<html>` hay không.
+## Liên kết
+
+- Màn hình liên quan: [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]], [[02_Design/SCR_005_Lich_Su_Don_Hang|Lịch sử đơn hàng]]
+- Kiến trúc: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc FE]]
+- Code graph: [[06_Code_Graph/laptop-shop-angular/admin/SKILL|Code Graph admin]]

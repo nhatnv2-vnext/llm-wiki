@@ -3,73 +3,73 @@ title: "Chi tiết sản phẩm · SCR_007"
 type: screen-spec
 project: laptop-shop-angular
 source:
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop-angular/src/app/client/product/product-detail.component.ts"
+  - "local: src/app/client/product/product-detail.component.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [screen-spec, product, cart, client, laptop-shop-angular]
+tags:
+  - screen-spec
+  - laptop-shop-angular
+  - product
+  - cart
+  - client
 ---
 
 # Chi tiết sản phẩm · SCR_007
 
-> Route: `products/:id` · Component: `src/app/client/product/product-detail.component.ts` · Guard: không (public, lazy)
+## Tổng quan
 
-Liên quan: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]] · [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]] · [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc Frontend]]
+Màn hình hiển thị chi tiết một sản phẩm (laptop) và cho phép người dùng chọn số lượng rồi **thêm vào giỏ hàng**.
 
-## 1. Tổng quan
+- Route: `products/:id`, lazy-loaded, **không có guard** (truy cập công khai) (`src/app/app.routes.ts:38-41`).
+- Component standalone `ProductDetailComponent implements OnInit` (`product-detail.component.ts:285`), `ChangeDetectionStrategy.OnPush` + Angular Signals.
 
-Màn hình hiển thị thông tin chi tiết một sản phẩm (laptop) và cho phép chọn số lượng để **thêm vào giỏ hàng**.
+## Thành phần UI
 
-- Route khai báo tại `app.routes.ts:37-41`, lazy-loaded, **không có guard** → truy cập công khai.
-- Component standalone, `OnPush`, dùng signals (`product-detail.component.ts:17-20`, `285`).
-- Template inline, gồm header/footer client dùng chung (`product-detail.component.ts:22,102`).
+- **Ảnh + thông tin sản phẩm**: tên, giá (`formatCurrency`), mô tả, tồn kho `product().quantity`; ảnh qua `getProductImage(product)` (`product-detail.component.ts:397-406`).
+- **Bộ chọn số lượng**: nút `+ / -` gọi `increaseQuantity()` / `decreaseQuantity()`, ràng buộc trong khoảng `1..maxQty` (`product-detail.component.ts:344-355`).
+- **Nút Thêm vào giỏ**: disabled khi hết hàng hoặc đang thêm (`isAddingToCart()`).
+- **Thông báo giỏ hàng**: `cartMessage()` + cờ `cartError()` để tô màu lỗi (`product-detail.component.ts:295-296`).
+- **Badge giỏ hàng** trên header: `cartCount` = `authService.totalItemsInCart` (`product-detail.component.ts:304`).
 
-## 2. Thành phần UI chính
+## Luồng tương tác
 
-| Vùng | Mô tả | Vị trí |
-|---|---|---|
-| Header / Footer client | `app-client-header` (binding `currentUser`, `cartCount`) + `app-client-footer` | `product-detail.component.ts:22,102` |
-| Link quay lại | "← Quay lại trang chủ" về `/` | `product-detail.component.ts:26` |
-| Trạng thái tải / không tìm thấy | "Đang tải chi tiết sản phẩm…" / "Khong tim thay san pham." | `product-detail.component.ts:28-29,96-97` |
-| Panel ảnh | Ảnh sản phẩm, fallback `default-laptop.jpg` khi lỗi | `product-detail.component.ts:32-38` |
-| Panel thông tin | Hãng, tên, giá, mô tả ngắn, lưới meta (thương hiệu/dòng máy/đã bán/tồn kho) | `product-detail.component.ts:40-52` |
-| Bộ chọn số lượng | Nút -/+ với giới hạn 1..tồn kho | `product-detail.component.ts:54-71` |
-| Nút "Add to cart" | Disabled khi đang thêm hoặc tồn kho = 0 | `product-detail.component.ts:73-83` |
-| Thông báo giỏ hàng | Hiện kết quả thêm vào giỏ (success/error) | `product-detail.component.ts:86-88` |
-| Mô tả chi tiết | `detailDesc` hoặc placeholder | `product-detail.component.ts:90-93` |
+1. `ngOnInit` đọc `id` từ `paramMap`; nếu không hợp lệ (NaN hoặc ≤ 0) → set product = null, dừng loading (`product-detail.component.ts:307-316`).
+2. `loadProductDetail(id)` gọi `GET /products/:id`, chuẩn hóa response (unwrap `data.data` nếu lồng), set product + reset số lượng về 1 (`product-detail.component.ts:319-342`).
+3. Người dùng điều chỉnh số lượng trong giới hạn tồn kho.
+4. `addToCart()` gọi `POST /products/:id/add-to-cart` với `{ quantity }`; thành công → tăng cart count + báo "Da them N san pham vao gio hang" (`product-detail.component.ts:357-395`).
+5. Xử lý lỗi: status 400 → "So luong vuot qua ton kho..."; khác → "Khong the them vao gio hang..." (`product-detail.component.ts:376-380`).
 
-## 3. Luồng tương tác
+## Service / API gọi tới
 
-1. **Khởi tạo** (`ngOnInit`, `:307-317`): lấy `id` từ route param; không hợp lệ → set `product = null`, dừng loading.
-2. **Tải sản phẩm** (`loadProductDetail`, `:319-342`): GET chi tiết, xử lý response lồng `{ data }` (`:325-331`), reset số lượng chọn về 1.
-3. **Chọn số lượng**: `increaseQuantity` (`:344-349`) giới hạn theo tồn kho; `decreaseQuantity` (`:351-355`) tối thiểu 1.
-4. **Thêm vào giỏ** (`addToCart`, `:357-395`): bỏ qua nếu hết hàng hoặc đang thêm; POST với `quantity`; thành công → tăng số lượng giỏ qua `authService.increaseCartCount()` (`:391`) và hiện thông báo; lỗi 400 → "So luong vuot qua ton kho…" (`:377`).
+Component gọi `HttpClient` trực tiếp (`product-detail.component.ts:287`). Base URL: `http://localhost:8080/api/v1/products` (`product-detail.component.ts:289`).
 
-## 4. API / service gọi tới
-
-> Base: `productsApiUrl = 'http://localhost:8080/api/v1/products'` (`product-detail.component.ts:289`). Backend: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]].
-
-| Method | Endpoint | Mục đích | Vị trí |
+| Hành động | HTTP | Endpoint | file:line |
 |---|---|---|---|
-| GET | `/products/:id` | Tải chi tiết sản phẩm | `product-detail.component.ts:323` |
-| POST | `/products/:id/add-to-cart` | Thêm sản phẩm vào giỏ (body `{ quantity }`) | `product-detail.component.ts:368` |
+| Tải chi tiết sản phẩm | GET | `/products/:id` | `product-detail.component.ts:323` |
+| Thêm vào giỏ | POST | `/products/:id/add-to-cart` | `product-detail.component.ts:368` |
 
-- HTTP gọi trực tiếp qua `HttpClient` inject (`:287`).
-- `AuthService` (`:288`) cung cấp `currentUser`, `totalItemsInCart` (cho header) và `increaseCartCount()` sau khi thêm giỏ — liên kết tới [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]].
+### Component gọi service nào (từ codegraph_callees)
 
-## 5. State / dữ liệu
+`codegraph_callees(addToCart)` cho thấy `addToCart` gọi `AuthService.increaseCartCount` (`src/app/shared/services/auth.service.ts:132`) sau khi POST thành công (`product-detail.component.ts:391`). Ngoài ra truy cập signal nội bộ `product`, `_isAddingToCart`, `_selectedQuantity` và interface `Product` (`src/app/shared/models/index.ts:1`).
 
-Signals nội bộ (`product-detail.component.ts:291-305`):
+- `AuthService` được inject (`product-detail.component.ts:288`): cung cấp `totalItemsInCart` (badge giỏ) và `currentUser` (`product-detail.component.ts:304-305`), `increaseCartCount` (`auth.service.ts:132`).
 
-| Signal | Kiểu | Ý nghĩa |
-|---|---|---|
-| `product` | `Product \| null` | Sản phẩm đang xem |
-| `isLoading` | `boolean` | Đang tải chi tiết |
-| `isAddingToCart` | `boolean` | Đang gọi add-to-cart |
-| `selectedQuantity` | `number` | Số lượng chọn (1..tồn kho) |
-| `cartMessage` | `string` | Thông báo kết quả thêm giỏ |
-| `cartError` | `boolean` | Cờ phân biệt success/error |
+## State
 
-- `cartCount` / `currentUser` map từ `AuthService` (`:304-305`).
-- Model `Product` import từ `../../shared/models` (`product-detail.component.ts:9`).
+State cục bộ qua Angular Signals (`product-detail.component.ts:291-305`):
 
-> ⚠️ Cần human review: phần `factory`/`target`/`shortDesc`/`detailDesc` hiển thị nhãn tiếng Việt không dấu trong template — có thể là chủ ý hoặc thiếu i18n.
+| Signal | Ý nghĩa |
+|---|---|
+| `product` | Dữ liệu `Product` đã tải (null nếu lỗi/không có) |
+| `isLoading` | Đang tải chi tiết |
+| `isAddingToCart` | Đang gửi request thêm giỏ |
+| `selectedQuantity` | Số lượng người dùng chọn |
+| `cartMessage` / `cartError` | Thông báo + cờ lỗi sau khi thêm giỏ |
+| `cartCount` / `currentUser` | Mirror từ `AuthService` (NgRx global) |
+
+## Liên kết
+
+- Feature BE: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]]
+- Màn hình liên quan: [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]], [[02_Design/SCR_005_Lich_Su_Don_Hang|Lịch sử đơn hàng]]
+- Kiến trúc: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc FE]]
+- Code graph: [[06_Code_Graph/laptop-shop-angular/admin/SKILL|Code Graph admin]]

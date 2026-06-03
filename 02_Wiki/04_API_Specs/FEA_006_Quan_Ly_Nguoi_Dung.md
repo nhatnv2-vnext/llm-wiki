@@ -3,124 +3,93 @@ title: "FEA_006 - Quản lý Người dùng"
 type: api-spec
 project: laptop-shop
 source:
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop/src/users/users.controller.ts"
+  - "local: src/users/users.controller.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [api-spec, backend, nestjs, users, profile, laptop-shop]
+tags:
+  - api-spec
+  - laptop-shop
+  - users
+  - profile
+  - password
 ---
 
 # FEA_006 — Quản lý Người dùng
 
-> Module CRUD người dùng, xem hồ sơ cá nhân và đổi mật khẩu.
-> Controller: `src/users/users.controller.ts` · Service: `src/users/users.service.ts`
+> Lần luồng thật bằng CodeGraph MCP (`codegraph_context` / `codegraph_explore` / `codegraph_impact`) trên project `laptop-shop`. Mọi claim kèm `file:line`.
 
-## Tổng quan
+## 1. Tổng quan
 
-`UsersController` quản lý vòng đời tài khoản người dùng (tạo / liệt kê / xem / cập nhật / xoá mềm), hồ sơ của user đăng nhập (`/me`) và đổi mật khẩu. Toàn bộ controller bảo vệ bởi `@UseGuards(JwtAuthGuard, PermissionGuard)` (`users.controller.ts:23`), mỗi endpoint yêu cầu permission `users:*` tương ứng.
+Module `users` quản lý CRUD người dùng, hồ sơ cá nhân (`/me`) và đổi mật khẩu. Ngoài các API public-facing, `UsersService` còn chứa các helper được tầng Auth tái sử dụng (`findByUsername`, `updateRefreshToken`, `findByRefreshToken`) — không expose qua controller này nhưng quan trọng cho impact.
 
-Prefix toàn cục `api` (`src/main.ts:37`) → route đầy đủ `/api/users/...`.
+Toàn bộ controller bảo vệ bởi `JwtAuthGuard` + `PermissionGuard` (`src/users/users.controller.ts:23`). `UsersService` chỉ inject `PrismaService` (`src/users/users.service.ts:14`).
 
-Tài liệu liên quan:
-- Frontend: Quản lý người dùng, [[02_Design/SCR_005_Lich_Su_Don_Hang|Hồ sơ cá nhân]], [[02_Design/SCR_006_Chi_Tiet_Don_Hang|Đổi mật khẩu]]
-- Feature liên quan: [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Quản lý vai trò]], [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực & phiên đăng nhập]], [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền (Permissions)]], [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm, Giỏ hàng & Đơn hàng]]
-- Kiến trúc: [[03_Architecture/laptop-shop_Architecture|Kiến trúc Backend]]
-- Database: Schema laptop-shop
+Nguyên tắc bảo mật:
+- Mọi truy vấn list/find đều `omit: { password: true }` (`users.service.ts:62,87,126`).
+- Mật khẩu hash bằng `hashPassword` (`bcrypt` qua `src/common`).
+- Soft-delete user (`deletedAt`), không xóa cứng.
 
-## Danh sách APIs
+## 2. Danh sách API
 
-| # | Method | URL | Permission | HTTP code | Service gọi |
-|---|--------|-----|------------|-----------|-------------|
-| 1 | POST | `/api/users` | `users:create` | 201 | `create()` |
-| 2 | GET | `/api/users?page=` | `users:list` | 200 | `findAll()` |
-| 3 | GET | `/api/users/me` | `users:read` | 200 | `getProfile()` |
-| 4 | GET | `/api/users/:id` | `users:read` | 200 | `findOne()` |
-| 5 | PUT | `/api/users/:id` | `users:update` | 200 | `update()` |
-| 6 | PUT | `/api/users/:id/change-password` | `users:update` | 200 | `changePassword()` |
-| 7 | DELETE | `/api/users/:id` | `users:delete` | 204 | `remove()` (soft delete) |
+| # | Method | URL | Permission | Payload chính | Handler |
+|---|--------|-----|------------|---------------|---------|
+| 1 | POST | `/api/users` (201) | `USERS_CREATE` | `CreateUserDto` | `create` (`users.controller.ts:30`) |
+| 2 | GET | `/api/users?page=` | `USERS_LIST` | query `page` | `findAll` (`:36`) |
+| 3 | GET | `/api/users/me` | `USERS_READ` | — (lấy `user.userId`) | `getProfile` (`:44`) |
+| 4 | GET | `/api/users/:id` | `USERS_READ` | param `id` | `findOne` (`:50`) |
+| 5 | PUT | `/api/users/:id` | `USERS_UPDATE` | `UpdateUserDto` (id qua `ParseIntPipe`) | `update` (`:56`) |
+| 6 | PUT | `/api/users/:id/change-password` (200) | `USERS_UPDATE` | `ChangePasswordDto` (`{ currentPassword, newPassword }`) | `changePassword` (`:66`) |
+| 7 | DELETE | `/api/users/:id` (204) | `USERS_DELETE` | param `id` (`ParseIntPipe`) | `remove` (`:76`) |
 
-> Thứ tự route: `/me` khai báo trước `:id` (`users.controller.ts:42,48`) để không bị route động nuốt.
+> Route `/me` khai báo trước `:id` (`:42` vs `:48`) nên không bị nuốt bởi param `:id`. `id` ở các route dùng `ParseIntPipe` để validate kiểu số ngay tại controller.
 
-### 1. POST /api/users — Tạo người dùng
-- **Permission**: `users:create`. HTTP 201 (`users.controller.ts:28-29`).
-- **Body** (`CreateUserDto`, `dto/user.dto.ts`):
-```json
-{
-  "username": "user01",
-  "password": "secret123",
-  "fullName": "Nguyễn Văn A",
-  "address": "123 ABC",
-  "phone": "0901234567",
-  "avatar": "https://cdn.shop/a.png"
-}
+## 3. Chuỗi gọi controller → service → repository
+
 ```
-- **Validation**: `username` 3–50 ký tự; `password` 6–100; `fullName`/`address`/`avatar` tuỳ chọn (avatar phải URL); `phone` tuỳ chọn, regex `^[0-9+\-\s()]+$`, ≤20.
-- **Logic** (`users.service.ts:16-50`):
-  1. Trùng `username` → `ConflictException('Username already exists')`.
-  2. Hash mật khẩu (`hashPassword`).
-  3. Tìm role `CUSTOMER` → gán `roleId` (fallback `1` nếu không tìm thấy).
-  4. Tạo user với `accountType = SYSTEM`, include `role`.
-
-### 2. GET /api/users?page=N — Danh sách người dùng (phân trang)
-- **Permission**: `users:list`. `page` mặc định 1, ≤0 → 1 (`users.controller.ts:36-38`).
-- **Logic**: lọc `deletedAt: null`, `omit password`, include `role` + `cart`; trang `PAGE_SIZE`. Trả `{ data, currentPage, totalPages, totalUsers }` (`users.service.ts:52-78`).
-
-### 3. GET /api/users/me — Hồ sơ user đăng nhập
-- **Permission**: `users:read`. Lấy `userId` từ `@User()` (token).
-- **Logic** (`users.service.ts:206-255`): `findUnique` theo `id` + `deletedAt: null`, omit `password`/`refreshToken`, include `role` và `cart.cartDetails.quantity`. Tính `totalItemsInCart = Σ quantity`, loại `cart` khỏi response, trả kèm `totalItemsInCart`.
-
-### 4. GET /api/users/:id — Chi tiết người dùng
-- **Permission**: `users:read`.
-- **Logic**: `findUnique` theo `id` + `deletedAt: null`, omit `password`, include `role` + `cart`; không thấy → `NotFoundException` (`users.service.ts:80-100`).
-
-### 5. PUT /api/users/:id — Cập nhật người dùng
-- **Permission**: `users:update`. `:id` qua `ParseIntPipe`.
-- **Body** (`UpdateUserDto`): `fullName?`, `address?`, `phone?`, `avatar?`, `roleId?` (≥1). (Không cho đổi `username`/`password` qua endpoint này.)
-- **Logic** (`users.service.ts:115-135`): kiểm tra tồn tại qua `findOne` → `user.update`, omit `password`, include `role`.
-
-### 6. PUT /api/users/:id/change-password — Đổi mật khẩu
-- **Permission**: `users:update`. HTTP 200 (`users.controller.ts:63-64`).
-- **Body** (`ChangePasswordDto`, `dto/change-password.dto.ts`):
-```json
-{
-  "currentPassword": "old123",
-  "newPassword": "newpass123",
-  "confirmPassword": "newpass123"
-}
+UsersController.create         → UsersService.create         → prisma.user.findUnique + role.findFirst(CUSTOMER) + user.create
+UsersController.findAll        → UsersService.findAll        → prisma.user.count + user.findMany (omit password, include role+cart)
+UsersController.getProfile     → UsersService.getProfile     → prisma.user.findUnique (include role + cart.cartDetails)
+UsersController.findOne        → UsersService.findOne        → prisma.user.findUnique (omit password, include role+cart)
+UsersController.update         → UsersService.update         → findOne (verify) + prisma.user.update
+UsersController.changePassword → UsersService.changePassword → prisma.user.findUnique + comparePassword + hashPassword + user.update
+UsersController.remove         → UsersService.remove         → prisma.softDelete(user)
 ```
-- **Validation**: `newPassword` 6–100 ký tự; `confirmPassword` phải khớp `newPassword` (validator tuỳ chỉnh `@MatchPassword('newPassword')`, `src/common/validators`).
-- **Logic** (`users.service.ts:137-175`):
-  1. Lấy user (chỉ `id`, `password`); không thấy → `NotFoundException`.
-  2. So khớp `currentPassword` (`comparePassword`); sai → `ConflictException('Current password is incorrect')`.
-  3. Hash `newPassword`, update; trả `{ id, username, fullName, updatedAt }`.
 
-### 7. DELETE /api/users/:id — Xoá mềm người dùng
-- **Permission**: `users:delete`. HTTP 204 (`users.controller.ts:73-74`).
-- **Logic**: `prisma.softDelete(user, { id })` (set `deletedAt`) (`users.service.ts:201-204`).
+Helper tầng Auth (không qua controller này): `findByUsername` (`:102`), `updateRefreshToken` (`:177`), `findByRefreshToken` (`:189`).
 
-## Business Logic (Quy tắc nghiệp vụ)
+## 4. Business Logic
 
-- **Mật khẩu luôn hash**: tạo user và đổi mật khẩu đều qua `hashPassword`; mọi truy vấn trả về đều `omit password` (trừ `findByUsername` dùng cho xác thực).
-- **Username unique**: tạo user kiểm tra trùng → `ConflictException`.
-- **Role mặc định CUSTOMER**: user mới được gán role `CUSTOMER`; `accountType = SYSTEM` (`src/config/constant`, `permissions.constant.ts`).
-- **Soft delete**: xoá set `deletedAt`; mọi list/detail lọc `deletedAt: null`.
-- **/me suy ra từ token**: không nhận `id` từ client, lấy `user.userId` từ JWT → tránh xem hồ sơ người khác.
-- **Đổi mật khẩu cần mật khẩu hiện tại**: phải cung cấp đúng `currentPassword` mới đổi được.
-- **Service mở rộng cho Auth**: `findByUsername`, `updateRefreshToken`, `findByRefreshToken` (`users.service.ts:102-199`) phục vụ luồng xác thực — xem [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực & phiên đăng nhập]].
+- **create** (`users.service.ts:16`): chặn trùng `username` → `ConflictException('Username already exists')` (`:23`); hash password (`:27`); lấy role mặc định `ROLES.CUSTOMER` (`:28`), fallback `roleId: 1` nếu không tìm thấy (`:41`); `accountType: ACCOUNT_TYPE.SYSTEM`. Trả user kèm `role`.
+- **findAll** (`:52`): phân trang theo `PAGE_SIZE`, lọc `deletedAt: null`, `omit password`, include `role` + `cart`.
+- **findOne** (`:80`): `omit password`, include `role` + `cart`; không thấy → `NotFoundException` (`:96`).
+- **update** (`:115`): gọi `findOne(id)` để verify tồn tại trước (`:116`) rồi `user.update`; `omit password`. (Lưu ý: không hash lại password nếu payload chứa password — cần human-review.)
+- **changePassword** (`:137`): lấy user kèm password → `comparePassword(currentPassword, user.password)` (`:152`); sai → `ConflictException('Current password is incorrect')` (`:158`); đúng → `hashPassword(newPassword)` (`:162`) + `user.update`. Chỉ trả `{ id, username, fullName, updatedAt }`.
+- **remove** (`:201`): soft-delete qua `prisma.softDelete(this.prisma.user, { id })` — controller trả 204.
+- **getProfile** (`:206`): validate `id` là number (`:208`); lấy user `omit password+refreshToken`, include `role` + `cart.cartDetails.quantity`; tính `totalItemsInCart = Σ quantity` (`:242`); loại `cart` khỏi response, trả `{ ...userWithoutCart, totalItemsInCart }`.
 
-## Database tương tác
+> Điểm cần human-review: `update` (`:115`) nhận `updateUserDto` trải thẳng vào `updateData` — nếu DTO cho phép field `password` thì sẽ lưu plaintext (không hash). Cần xác nhận `UpdateUserDto` không chứa password.
 
-Xem Schema laptop-shop:
+## 5. Tương tác Database (Prisma)
 
-| Model | Table | Vai trò |
-|-------|-------|---------|
-| `User` | `users` | CRUD user, password, refreshToken, soft delete |
-| `Role` | `roles` | Gán role mặc định khi tạo, include khi đọc — [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Quản lý vai trò]] |
-| `Cart` | `carts` | Include vào hồ sơ/danh sách; tính `totalItemsInCart` |
-| `CartDetail` | `cart_detail` | Lấy `quantity` để tính số item trong giỏ (`/me`) |
+| Model | Thao tác | Vị trí (users.service.ts) |
+|-------|----------|---------------------------|
+| `user` | findUnique, findFirst, count, findMany, create, update, softDelete | `:18,32,55,57,81,103,123,139,165,178,190,203,214` |
+| `role` | findFirst (lấy role CUSTOMER mặc định) | `:28` |
+| `cart` / `cartDetail` | đọc qua include (profile/findAll/findOne) | `:66,91,225-233` |
 
-Truy cập DB qua `PrismaService` (`src/database`); hash/so khớp mật khẩu qua helper `hashPassword`/`comparePassword` (`src/common`).
+Phụ thuộc helper bên ngoài: `hashPassword`, `comparePassword` (`src/common`, `:8`); hằng `ACCOUNT_TYPE`, `PAGE_SIZE` (`src/config/constant`), `ROLES` (`src/auth/constants/permissions.constant`).
 
-## Cần human review
+## 6. Phạm vi ảnh hưởng (impact)
 
-- `update` cho phép truyền `roleId` tự do với chỉ permission `users:update` — cần xác nhận có nên giới hạn việc nâng quyền (escalation) bằng permission admin riêng.
-- `findAll` không `omit` các field nhạy cảm khác ngoài `password` (vd `refreshToken` không bị omit trong `findAll`/`findOne`) — cần review lộ lọt token.
+Cụm `users` gói trong 2 file chính, NHƯNG service được Auth tái sử dụng nên impact lan rộng hơn roles:
+
+- **users.controller.ts**: `UsersController:24`, `create:30`, `findAll:36`, `getProfile:44`, `findOne:50`, `update:56`, `changePassword:66`, `remove:76`.
+- **users.service.ts**: `UsersService:13`, `create:16`, `findAll:52`, `findOne:80`, `findByUsername:102`, `update:115`, `changePassword:137`, `updateRefreshToken:177`, `findByRefreshToken:189`, `remove:201`, `getProfile:206`.
+
+Các helper `findByUsername` / `updateRefreshToken` / `findByRefreshToken` được module Auth gọi → thay đổi chữ ký của chúng sẽ ảnh hưởng [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|module phân quyền/role]] và luồng xác thực. `create` phụ thuộc role mặc định `CUSTOMER` nên gắn chặt với quản lý vai trò.
+
+## 7. Liên kết
+
+- [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Vai trò]]
+- [[03_Architecture/laptop-shop_Architecture|Kiến trúc BE]]
+- [[06_Code_Graph/laptop-shop/products/SKILL|Code Graph products]]

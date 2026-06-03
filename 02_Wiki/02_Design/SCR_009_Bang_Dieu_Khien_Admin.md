@@ -3,68 +3,71 @@ title: "Bảng điều khiển Admin · SCR_009"
 type: screen-spec
 project: laptop-shop-angular
 source:
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop-angular/src/app/admin/dashboard/admin-dashboard.component.ts"
+  - "local: src/app/admin/dashboard/admin-dashboard.component.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [screen-spec, admin, dashboard, laptop-shop-angular]
+tags:
+  - screen-spec
+  - laptop-shop-angular
+  - admin
+  - dashboard
 ---
 
 # Bảng điều khiển Admin · SCR_009
 
-> Route: `admin` (admin.routes path `''`) · Component: `src/app/admin/dashboard/admin-dashboard.component.ts` · Guard: ⚠️ không có (lazy)
+## Tổng quan
 
-Liên quan: [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Quản lý vai trò]] · [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý người dùng]] · [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]] · [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc Frontend]]
+Trang dashboard tổng quan cho khu vực quản trị: hiển thị thẻ thống kê (người dùng, sản phẩm, đơn hàng, doanh thu), khu vực biểu đồ và bảng đơn hàng gần đây.
 
-## 1. Tổng quan
+- Route: `admin` → `adminRoutes` (lazy children); path `''` của admin map tới `AdminDashboardComponent` (`src/app/app.routes.ts:58-59`, `src/app/admin/admin.routes.ts:4-8`).
+- Component standalone `AdminDashboardComponent implements OnInit` (`admin-dashboard.component.ts:241`), `ChangeDetectionStrategy.OnPush` + Angular Signals.
+- ⚠️ **Dữ liệu hiện là mock, chưa nối API** — xem mục Service bên dưới.
 
-Trang tổng quan quản trị: hiển thị số liệu thống kê (người dùng, sản phẩm, đơn hàng, doanh thu), 2 biểu đồ placeholder và bảng đơn hàng gần đây.
+## Thành phần UI
 
-- Route `admin` lazy-load `adminRoutes` (`app.routes.ts:56-60`); path `''` của admin map tới dashboard (`admin.routes.ts:3-8`).
-- ⚠️ Route admin **không khai báo guard** — khác với các route client `cart`/`profile`/`order` dùng `authGuard`.
-- Component standalone, `OnPush`, dùng layout admin: `app-admin-header` + `app-admin-sidenav` (`admin-dashboard.component.ts:4-5,50-57`).
+- **Header admin**: `<app-admin-header>` với `[currentUser]`, output `(sidebarToggle)`, `(logout)` (`admin-dashboard.component.ts:50-54`). Component `AdminHeaderComponent` (`admin-dashboard.component.ts:4`).
+- **Sidenav admin**: `<app-admin-sidenav>` với `[currentUser]`, toggle qua class `sb-sidenav-toggled` (`admin-dashboard.component.ts:56-57`). Component `AdminSidenavComponent` (`admin-dashboard.component.ts:5`).
+- **Thẻ thống kê (4 card)**: lặp `statCards()`, mỗi card có title/value/icon/color/link/description (`admin-dashboard.component.ts:69-94`, `259-292`).
+- **Khu vực biểu đồ**: canvas `myAreaChart`, `myBarChart` (Chart.js nạp qua CDN, chưa khởi tạo trong TS) (`admin-dashboard.component.ts:96-121`).
+- **Bảng đơn hàng gần đây**: lặp `recentOrders()`; rỗng → "Chưa có đơn hàng nào"; badge trạng thái qua `getStatusBadgeClass` (`admin-dashboard.component.ts:123-172`).
 
-## 2. Thành phần UI chính
+## Luồng tương tác
 
-| Vùng | Mô tả | Vị trí |
-|---|---|---|
-| Header admin | `app-admin-header` (input `currentUser`, output `sidebarToggle`/`logout`) | `admin-dashboard.component.ts:50-54` |
-| Sidenav admin | `app-admin-sidenav`, toggle qua `isSidebarToggled()` | `admin-dashboard.component.ts:56-57` |
-| Thẻ thống kê (4) | Lặp `statCards()`: người dùng/sản phẩm/đơn hàng/doanh thu, mỗi thẻ link tới module admin tương ứng | `admin-dashboard.component.ts:68-94` |
-| Biểu đồ | 2 canvas placeholder "Doanh thu tháng", "Sản phẩm bán chạy" | `admin-dashboard.component.ts:97-121` |
-| Bảng đơn hàng gần đây | Lặp `recentOrders()`: ID, khách, tổng tiền, trạng thái (badge màu), ngày, nút "Xem" | `admin-dashboard.component.ts:124-172` |
-| Footer | Copyright + link | `admin-dashboard.component.ts:177-188` |
+1. `ngOnInit` gọi `loadDashboardData()` (`admin-dashboard.component.ts:294-296`).
+2. `loadDashboardData()` (async) set **mock** `stats` và `recentOrders`, rồi cập nhật lại `statCards` với số liệu mới (`admin-dashboard.component.ts:298-380`). Có comment `// TODO: Replace with actual API calls`.
+3. Bấm toggle trên header → `toggleSidebar()` đảo cờ `isSidebarToggled` (`admin-dashboard.component.ts:382-384`).
+4. Bấm logout trên header → `onLogout()` hiện chỉ `console.log` — `// TODO: Implement logout functionality` (`admin-dashboard.component.ts:386-389`).
+5. Mỗi card / dòng đơn hàng có `routerLink` tới `/admin/users`, `/admin/products`, `/admin/orders`, `/admin/orders/:id`, `/admin/orders/statistics` (các route này đang bị comment trong `admin.routes.ts:9-20`).
 
-Liên kết điều hướng từ thẻ thống kê: `/admin/users`, `/admin/products`, `/admin/orders`, `/admin/orders/statistics` (`admin-dashboard.component.ts:266-289`) — chưa được khai báo trong `admin.routes.ts` (đang comment).
+## Service / API gọi tới
 
-## 3. Luồng tương tác
+**Không có** lời gọi `HttpClient` thực. Component không inject service domain hay `AuthService`; mọi dữ liệu là hard-code mock trong `loadDashboardData` (`admin-dashboard.component.ts:301-337`).
 
-1. **Khởi tạo** (`ngOnInit`, `:294-296`): gọi `loadDashboardData()`.
-2. **Tải dữ liệu** (`loadDashboardData`, `:298-380`): hiện tại dùng **mock data** (`// TODO: Replace with actual API calls`, `:300`) — set `stats` và `recentOrders` cứng, rồi build lại `statCards`.
-3. **Toggle sidebar** (`toggleSidebar`, `:382-384`): đảo `isSidebarToggled`.
-4. **Đăng xuất** (`onLogout`, `:386-389`): hiện chỉ `console.log` (`// TODO: Implement logout`).
-5. **Badge trạng thái** (`getStatusBadgeClass`, `:398-408`): map trạng thái tiếng Việt → class Bootstrap.
+| Hành động | HTTP | Endpoint | Trạng thái |
+|---|---|---|---|
+| Tải số liệu dashboard | — | — | ⚠️ Mock, `// TODO: Replace with actual API calls` (`admin-dashboard.component.ts:300`) |
+| Đăng xuất | — | — | ⚠️ Chưa cài đặt (`admin-dashboard.component.ts:387`) |
 
-## 4. API / service gọi tới
+### Component gọi service nào (từ codegraph_callees)
 
-Hiện **chưa gọi API thực** — toàn bộ số liệu là mock trong `loadDashboardData` (`admin-dashboard.component.ts:298-380`). Không inject service nào.
+`codegraph_callees(loadDashboardData)` chỉ trả về một callee nội bộ: `formatCurrency` (`admin-dashboard.component.ts:391`) để format doanh thu mock. **Không có callee tới service/HTTP/store** — xác nhận màn hình chưa tích hợp backend.
 
-Định hướng backend khi nối thật: thống kê người dùng → [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý người dùng]] và [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Quản lý vai trò]]; thống kê sản phẩm/đơn hàng/doanh thu → [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]].
+## State
 
-## 5. State / dữ liệu
+State cục bộ qua Angular Signals (`admin-dashboard.component.ts:242-292`):
 
-Signals nội bộ (`admin-dashboard.component.ts:243-257`):
+| Signal | Ý nghĩa |
+|---|---|
+| `currentUser` | User hiển thị trên header/sidenav (mock `{ username: 'Admin User' }`) |
+| `isSidebarToggled` | Trạng thái thu/mở sidebar |
+| `stats` | `DashboardStats` (mock) |
+| `recentOrders` | Danh sách đơn hàng gần đây (mock) |
+| `statCards` | Mảng `StatCard` hiển thị thẻ thống kê |
 
-| Signal | Kiểu | Ý nghĩa |
-|---|---|---|
-| `currentUser` | `any` (mặc định `{ username: 'Admin User' }`) | Người dùng admin hiện tại (hard-code) |
-| `isSidebarToggled` | `boolean` | Trạng thái thu gọn sidebar |
-| `stats` | `DashboardStats` | Số liệu tổng quan |
-| `recentOrders` | `any[]` | Đơn hàng gần đây |
-| `statCards` | `StatCard[]` | Cấu hình 4 thẻ thống kê |
+Không dùng NgRx; `currentUser` ở đây là mock cục bộ chứ không lấy từ `AuthService`.
 
-Kiểu dữ liệu: `DashboardStats`, `StatCard` định nghĩa nội bộ (`admin-dashboard.component.ts:7-21`).
+## Liên kết
 
-> ⚠️ Cần human review:
-> - Route `admin` **thiếu guard** — rủi ro bảo mật, dashboard admin truy cập được không cần đăng nhập (`admin.routes.ts`).
-> - Dữ liệu hoàn toàn **mock**, `currentUser`/`onLogout` là placeholder; cần nối API thật.
-> - Các link `/admin/users|products|orders|orders/statistics` chưa có route (đang comment trong `admin.routes.ts:9-20`) → sẽ rơi vào wildcard 404.
+- Feature BE: [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Vai trò]], [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Người dùng]], [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]]
+- Kiến trúc: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc FE]]
+- Code graph: [[06_Code_Graph/laptop-shop-angular/admin/SKILL|Code Graph admin]]

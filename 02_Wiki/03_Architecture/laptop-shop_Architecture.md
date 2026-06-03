@@ -4,7 +4,7 @@ type: architecture
 project: laptop-shop
 source:
   - "01_Raw/codebase/projects.json#laptop-shop"
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop"
+  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop/src"
 status: draft
 last_synced: "2026-06-03"
 tags:
@@ -14,222 +14,230 @@ tags:
   - nestjs
 ---
 
-# Kiến trúc: laptop-shop
+# Kiến trúc: laptop-shop (Backend)
 
 ## TL;DR
 
-Backend NestJS (monolith modular) cho cửa hàng laptop. Stack: NestJS 9 + Prisma 6 (MySQL) + Bull/Redis queue (gửi email bất đồng bộ) + `@nestjs/schedule` (cronjob hủy đơn quá hạn & bảo trì queue). Xác thực bằng JWT (Passport, access + refresh token), phân quyền theo Role-Permission (RBAC) qua guard global. Giao tiếp nội bộ phát/nhận sự kiện qua `EventEmitter2` (vd `user.registered` → welcome email).
+Backend NestJS theo kiến trúc module hóa (controller → service → Prisma). Dữ liệu lưu trên MySQL qua Prisma; xử lý phi đồng bộ email bằng **Bull queue** trên **Redis**; tác vụ định kỳ bằng `@Cron` (NestJS Schedule). Giao tiếp lỏng giữa Auth và Cronjob qua **EventEmitter2** (sự kiện `user.registered`). Tài liệu này được tái sinh bằng CodeGraph (mọi claim kèm `file:line`).
 
-Tài liệu này liên kết tới các đặc tả tính năng: [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực]], [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền]], [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|Cronjob & Email]], [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]], [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Vai trò]], [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Người dùng]] và Schema DB.
+> Phạm vi: thư mục `src/` của project `laptop-shop`. Frontend Angular được mô tả riêng tại `laptop-shop-angular_Architecture.md`.
+
+---
 
 ## 1. Sơ đồ tổng quan (C4 — Container Level)
 
-Bootstrap tại `src/main.ts`; mọi module được gom trong `src/app.module.ts`.
-
 ```mermaid
 graph TD
-    Client[Angular Client laptop-shop-angular] -->|REST api/v1 HTTPS| API[NestJS App api global prefix]
-    API -->|Prisma ORM| DB[(MySQL nodejspro)]
-    API -->|Enqueue email jobs| Redis[(Redis Bull Queue email)]
-    Worker[EmailProcessor consumer] -->|Consume jobs| Redis
-    Worker -->|SMTP send| Mail[Nodemailer SMTP Gmail]
-    Cron[CronjobService schedule] -->|Read Write| DB
-    Cron -->|Maintenance enqueue| Redis
-    API -.->|Dev only Bull Board| Dashboard[admin queues UI]
+    Client[Angular Client] -->|REST HTTPS| API[NestJS App]
+    API -->|Read Write Prisma| DB[(MySQL)]
+    API -->|Enqueue job| Redis[(Redis Bull Queue email)]
+    Redis -->|Process job| Proc[EmailProcessor]
+    Proc -->|SMTP send| SMTP[SMTP Mailer Gmail]
+    Cron[Cron Scheduler] -->|every 10 min| API
+    API -.->|EventEmitter2 user.registered| API
 ```
 
-Bằng chứng:
-- API prefix `api` + URI versioning v1: `src/main.ts:37-41`.
-- Global JWT guard + validation pipe + transform interceptor: `src/main.ts:19-32`.
-- Prisma/MySQL: `prisma/schema.prisma:5-8`; provider mysql, `DATABASE_URL` trong `.env.example:4`.
-- Bull/Redis cấu hình global: `src/app.module.ts:25-44`; Redis host/port `.env.example:23-25`.
-- Mailer SMTP: `src/mail/mail.module.ts:13-30`; biến MAIL_* `.env.example:16-20`.
-- Bull Board (chỉ NODE_ENV=development) tại `/admin/queues`: `src/main.ts:44-60`.
+**Bằng chứng hạ tầng (bootstrap tại `src/app.module.ts`):**
+
+| Thành phần | Cấu hình | Nguồn |
+|---|---|---|
+| HTTP API | NestJS app, global `HttpExceptionFilter` | `src/app.module.ts:53` |
+| EventEmitter | `EventEmitterModule.forRoot()` | `src/app.module.ts:24` |
+| Bull + Redis | `BullModule.forRootAsync` đọc `REDIS_HOST/PORT/PASSWORD` | `src/app.module.ts:25` |
+| MySQL | `DatabaseModule` + `PrismaService` | `src/app.module.ts:45`, `src/database/prisma.service.ts` |
+| Queue `email` | `BullModule.registerQueue({ name: 'email' })` | `src/mail/mail.module.ts:10` |
+| SMTP Mailer | `MailerModule.forRootAsync` (host/port/auth từ `MAIL_*`) | `src/mail/mail.module.ts:13` |
+| Cron Scheduler | `@Cron` trong `CronjobService` (NestJS Schedule) | `src/cronjob/services/cronjob.service.ts:32` |
+
+---
 
 ## 2. Phân tầng & Module
 
-Kiến trúc 3 tầng chuẩn NestJS: **Controller → Service → Prisma (data access)**. Cross-cutting: Guard global (JWT + Permission), Interceptor (transform response), Exception filter (`APP_FILTER`).
-
-| Module/Area | Trách nhiệm | Nguồn |
-|-------------|-------------|-------|
-| `app.module` | Composition root: nạp Config (global), EventEmitter, Bull (global), các feature module; đăng ký `HttpExceptionFilter` global | `src/app.module.ts:18-63` |
-| auth | Đăng nhập/đăng ký/refresh/logout, JWT (access+refresh), Passport local & jwt strategy, guards (Jwt, Local, Permission, Role, RefreshToken), quản lý Permission | `src/auth/auth.module.ts`, `src/auth/auth.service.ts`, `src/auth/auth.controller.ts`, `src/auth/guards/`, `src/auth/services/permission.service.ts` |
-| users | CRUD người dùng, đổi mật khẩu, lưu/xóa refresh token | `src/users/users.controller.ts`, `src/users/users.service.ts` |
-| roles | CRUD vai trò, gán permission cho role | `src/roles/roles.controller.ts`, `src/roles/roles.service.ts` |
-| products | Sản phẩm (CRUD), giỏ hàng (cart/cartDetail), đặt hàng (place-order, transaction), lịch sử & chi tiết đơn, cập nhật payment method | `src/products/products.controller.ts`, `src/products/products.service.ts` |
-| mail | Producer queue + consumer (`EmailProcessor`), gửi email welcome / password-reset / order-confirmation qua Nodemailer | `src/mail/mail.module.ts`, `src/mail/processors/email.processor.ts`, `src/mail/services/mail.service.ts` |
-| cronjob | Tác vụ định kỳ (`@Cron`), lắng nghe event (`user.registered`), enqueue email, log job vào `cronjob_logs` | `src/cronjob/cronjob.module.ts`, `src/cronjob/services/cronjob.service.ts` |
-| database | `PrismaService` (kết nối + soft delete helper), `DatabaseModule` | `src/database/prisma.service.ts`, `src/database/database.module.ts` |
-| common / config / core | Decorators (`@Public`, `@User`, `@RequirePermissions`, `@ResponseMessage`), filters, validators, CORS config, `TransformInterceptor` | `src/common/`, `src/config/`, `src/core/transform.interceptor.ts` |
-
-### Sơ đồ phụ thuộc module
+Mỗi feature là một NestJS module độc lập: `Controller` (HTTP + guard) → `Service` (business logic) → `PrismaService` (data access). DTO + validators ở tầng biên, guard/decorator dùng chung ở `common` và `auth`.
 
 ```mermaid
 graph LR
-    App[AppModule] --> Database[DatabaseModule]
-    App --> Mail[MailModule]
-    App --> Users[UsersModule]
-    App --> Roles[RolesModule]
-    App --> Products[ProductsModule]
-    App --> Auth[AuthModule]
-    App --> Cronjob[CronjobModule]
-    Auth --> Users
-    Products --> Mail
-    Products --> Database
-    Cronjob --> Mail
-    Cronjob --> Database
-    Mail --> Queue[Bull Queue email]
-    Cronjob --> Queue
-    Products --> Queue
+    subgraph HTTP
+        AC[Auth Controller]
+        PC[Products Controller]
+        UC[Users Controller]
+        RC[Roles Controller]
+        PMC[Permission Controller]
+        CC[Cronjob Controller]
+    end
+    subgraph Service
+        AS[Auth Service]
+        PS[Products Service]
+        US[Users Service]
+        RS[Roles Service]
+        PMS[Permission Service]
+        CS[Cronjob Service]
+        MS[Mail Service]
+    end
+    AC --> AS
+    PC --> PS
+    UC --> US
+    RC --> RS
+    PMC --> PMS
+    CC --> CS
+    AS --> US
+    PS --> MS
+    CS --> MS
+    AS --> Prisma[(PrismaService MySQL)]
+    PS --> Prisma
+    US --> Prisma
+    RS --> Prisma
+    PMS --> Prisma
+    CS --> Prisma
 ```
 
-Bằng chứng: `src/app.module.ts:45-52` (imports); ProductsService inject `email` queue + MailService `src/products/products.service.ts:18-22`; CronjobModule import MailModule + đăng ký queue `src/cronjob/cronjob.module.ts:10-20`; MailModule export queue `src/mail/mail.module.ts:32-34`.
+| Module/Area | Trách nhiệm | Nguồn | Spec |
+|---|---|---|---|
+| auth | Đăng ký, đăng nhập, JWT, refresh token, guard, passport | `src/auth` | [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực]] |
+| auth (permission/guard) | Phân quyền theo permission, `PermissionGuard`, `RoleGuard` | `src/auth/guards`, `src/auth/services/permission.service.ts` | [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền]] |
+| roles | Quản lý vai trò, gán permission cho role | `src/roles` | [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Vai trò]] |
+| users | Quản lý người dùng, đổi mật khẩu, refresh token store | `src/users` | [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Người dùng]] |
+| products | Sản phẩm, giỏ hàng, đặt hàng, lịch sử đơn, payment method | `src/products` | [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Đơn hàng]] |
+| cronjob | Cron định kỳ + producer email queue + log job | `src/cronjob` | [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|Cronjob & Email]] |
+| mail | Consumer queue email (`EmailProcessor`) + gửi SMTP | `src/mail` | [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|Cronjob & Email]] |
+| common / core | Decorator, guard chung, filter, interceptor, util password | `src/common`, `src/core` | — |
+| database | `PrismaService` kết nối MySQL | `src/database` | — |
 
-### Lớp bảo mật (Guard chain)
-
-```mermaid
-graph TD
-    Req[HTTP Request] --> JwtG[JwtAuthGuard global]
-    JwtG -->|Public bypass| Handler[Route Handler]
-    JwtG -->|Verify JWT| PermG[PermissionGuard per controller]
-    PermG -->|Lookup user role permissions in DB| DB[(MySQL)]
-    PermG -->|RequirePermissions match| Handler
-    PermG -->|Khong du quyen| Deny[403 Forbidden]
-```
-
-Bằng chứng: JWT guard đăng ký global `src/main.ts:19-20`; `@Public()` bypass đọc qua Reflector; PermissionGuard truy vấn role→permissions `src/auth/guards/permission.guard.ts:27-54`; controller products gắn `@UseGuards(JwtAuthGuard, PermissionGuard)` và `@RequirePermissions(...)` `src/products/products.controller.ts:24-30`.
+---
 
 ## 3. Luồng giao dịch tiêu biểu — Đặt hàng (place-order)
 
-Endpoint `POST /api/v1/products/place-order` (`src/products/products.controller.ts:119-125`) → `handlePlaceOrder` (`src/products/products.service.ts:235-440`). Toàn bộ tạo đơn nằm trong một transaction Prisma isolation `Serializable`, có `SELECT ... FOR UPDATE` khóa product để chống race condition; email xác nhận gửi bất đồng bộ qua queue (fallback gửi đồng bộ nếu queue lỗi).
+Luồng được dựng từ `codegraph_trace`/`codegraph_callees`: `placeOrder` (controller) → `handlePlaceOrder` (service, chạy trong `prisma.$transaction`) → `sendOrderConfirmationEmail` (mail service). Service khóa hàng bằng `SELECT ... FOR UPDATE` để tránh race condition tồn kho.
 
 ```mermaid
 sequenceDiagram
-    participant U as User Client
-    participant C as ProductsController
-    participant S as ProductsService
+    participant U as User
+    participant FE as Angular Client
+    participant API as Products Controller
+    participant SVC as Products Service
     participant DB as MySQL Prisma
-    participant Q as Bull Queue email
-    participant M as MailService SMTP
-
-    U->>C: POST api v1 products place-order totalPrice
-    C->>S: handlePlaceOrder userId totalPrice
-    S->>DB: BEGIN tx Serializable
-    S->>DB: find cart with cartDetails
-    alt Cart rong
-        DB-->>S: empty
-        S-->>C: BadRequestException Cart is empty
-    else Co hang
-        S->>DB: SELECT products FOR UPDATE lock
-        S->>DB: re-check quantity tung san pham
-        S->>DB: create order plus orderDetails status PENDING
-        S->>DB: decrement quantity increment sold
-        S->>DB: delete cartDetails and cart
-        S->>DB: COMMIT
-        S->>DB: find user username email
-        S->>Q: add order-confirmation attempts 3 backoff
-        Q-->>S: job queued
-        S-->>C: success orderId
-        C-->>U: Order placed successfully
-        Note over Q,M: Xu ly bat dong bo
-        Q->>M: EmailProcessor send order email
-    end
+    participant MAIL as Mail Service
+    U->>FE: Bam dat hang
+    FE->>API: POST /products/place-order
+    API->>SVC: handlePlaceOrder userId totalPrice
+    SVC->>DB: BEGIN transaction
+    SVC->>DB: Lock products FOR UPDATE
+    DB-->>SVC: Cart va product hien tai
+    SVC->>DB: Tao order va orderDetail
+    SVC->>DB: Tru ton kho cong sold xoa cart
+    SVC->>DB: COMMIT
+    SVC->>MAIL: sendOrderConfirmationEmail
+    MAIL-->>SVC: Da gui xac nhan
+    SVC-->>API: Order result
+    API-->>FE: 201 Order created
 ```
 
-Lưu ý quan trọng (bằng chứng):
-- Transaction Serializable + timeout 10s: `src/products/products.service.ts:344-347`.
-- Khóa hàng `FOR UPDATE`: `:259-263`; re-check tồn kho: `:267-283`.
-- Tạo order `status PENDING`, `paymentMethod NOT_DEFINED`, `paymentStatus PAYMENT_UNPAID`: `:286-311`.
-- Trừ kho + tăng sold: `:314-328`; xóa cart: `:331-340`.
-- Enqueue email `order-confirmation`, attempts 3, exponential backoff: `:363-393`.
-- Fallback gửi email đồng bộ nếu enqueue lỗi: `:394-423` — không ném lỗi để không ảnh hưởng việc đặt hàng.
+**Bằng chứng:**
+- `POST /products/place-order` → `placeOrder` — `src/products/products.controller.ts:119`
+- `placeOrder` gọi `handlePlaceOrder` — `src/products/products.controller.ts:121`
+- `handlePlaceOrder` mở `prisma.$transaction`, khóa `FOR UPDATE`, kiểm tra tồn kho — `src/products/products.service.ts:235`
+- Callee `sendOrderConfirmationEmail` — `src/mail/services/mail.service.ts:109`
 
-> Hoàn tất thanh toán là bước riêng: `PATCH /api/v1/products/order/:id/payment-method` cập nhật `status CONFIRM`, `paymentStatus PAYMENT_SUCCESS` và enqueue lại email xác nhận (`src/products/products.service.ts:480-573`).
+> Ghi chú: trong `handlePlaceOrder`, email xác nhận đơn được gọi **trực tiếp** qua `MailService` (gửi đồng bộ SMTP), không qua Bull queue — khác với welcome email.
 
-## 4. Queue / Xử lý phi đồng bộ
+---
 
-Một queue Bull duy nhất tên **`email`** (Redis). Producer ở nhiều nơi, consumer tập trung tại `EmailProcessor`.
+## 4. Luồng Queue Email + Cronjob
 
-| Job name | Producer (enqueue) | Consumer | Mục đích |
-|----------|--------------------|----------|----------|
-| `welcome` | `CronjobService.queueWelcomeEmail` (`src/cronjob/services/cronjob.service.ts:156-179`), kích hoạt bởi event `user.registered` | `EmailProcessor.handleWelcomeEmail` (`src/mail/processors/email.processor.ts:31-49`) | Email chào mừng sau đăng ký |
-| `password-reset` | `CronjobService.queuePasswordResetEmail` (`:181-206`) | `EmailProcessor.handlePasswordResetEmail` (`:51-73`) | Email đặt lại mật khẩu |
-| `order-confirmation` | `ProductsService.handlePlaceOrder` (`src/products/products.service.ts:363-393`), `ProductsService.updatePaymentMethod` (`:555-562`), `CronjobService.queueOrderConfirmationEmail` (`src/cronjob/services/cronjob.service.ts:208-231`) | `EmailProcessor.handleOrderConfirmationEmail` (`src/mail/processors/email.processor.ts:75-96`) | Email xác nhận đơn hàng |
+### 4.1 Welcome email (register → event → queue → processor)
 
-Cấu hình job phổ biến: `attempts: 3`, `backoff: exponential` (delay 2s–60s), một số job có `removeOnComplete/removeOnFail`. Khi job ném lỗi, Bull tự retry (`email.processor.ts:47, 71, 92`).
+Đăng ký không gửi email trực tiếp: `AuthService.register` phát sự kiện `user.registered` qua `EventEmitter2`; `CronjobService.handleUserRegistered` lắng nghe và **enqueue** job `welcome` vào Bull queue `email`; `EmailProcessor` consume và gửi SMTP.
 
 ```mermaid
-graph LR
-    Auth[AuthService register] -->|emit user.registered| Cron[CronjobService OnEvent]
-    Cron -->|add welcome| Q[(Redis Queue email)]
-    Products[ProductsService place-order / payment] -->|add order-confirmation| Q
-    Cron -->|add password-reset| Q
-    Q --> Proc[EmailProcessor @Processor email]
-    Proc -->|welcome / password-reset / order-confirmation| MS[MailService]
-    MS -->|SMTP| SMTP[Nodemailer Gmail]
+sequenceDiagram
+    participant FE as Angular Client
+    participant AC as Auth Controller
+    participant AS as Auth Service
+    participant EV as EventEmitter2
+    participant CS as Cronjob Service
+    participant Q as Bull Queue email Redis
+    participant EP as Email Processor
+    participant MS as Mail Service
+    FE->>AC: POST /auth/register
+    AC->>AS: register dto
+    AS->>AS: usersService.create
+    AS->>EV: emit user.registered
+    AS-->>AC: id username fullName
+    EV->>CS: handleUserRegistered
+    CS->>Q: queueWelcomeEmail add job welcome
+    Q->>EP: Process welcome
+    EP->>MS: sendWelcomeEmail
+    MS-->>EP: SMTP sent
 ```
 
-Bằng chứng event-driven: `AuthService.register` phát `user.registered` (`src/auth/auth.service.ts:59-64`) → `@OnEvent('user.registered')` trong CronjobService (`src/cronjob/services/cronjob.service.ts:23-27`). Queue khai báo `@Processor('email')` (`src/mail/processors/email.processor.ts:25`).
+**Bằng chứng:**
+- `POST /auth/register` → `handleRegister` → `register` — `src/auth/auth.controller.ts:29`, `src/auth/auth.service.ts:48`
+- `eventEmitter.emit('user.registered', ...)` — `src/auth/auth.service.ts:59`
+- `@OnEvent('user.registered') handleUserRegistered` → `queueWelcomeEmail` — `src/cronjob/services/cronjob.service.ts:23`
+- Producer `queueWelcomeEmail` enqueue vào `@InjectQueue('email')` — `src/cronjob/services/cronjob.service.ts:156`, `src/cronjob/services/cronjob.service.ts:18`
+- Consumer `@Process('welcome') handleWelcomeEmail` → `sendWelcomeEmail` — `src/mail/processors/email.processor.ts:26`, `src/mail/services/mail.service.ts:50`
 
-> Giám sát queue: **Bull Board** mount tại `/admin/queues` chỉ khi `NODE_ENV=development` (`src/main.ts:44-60`).
+### 4.2 Cronjob định kỳ
 
-## 5. Cronjob / Tác vụ định kỳ
+`CronjobService` đăng ký các job bằng `@Cron(CronExpression.EVERY_10_MINUTES)`. Trạng thái/log job đọc qua `CronjobController` (yêu cầu permission `SYSTEM:READ`).
 
-Đăng ký qua `ScheduleModule.forRoot()` (`src/cronjob/cronjob.module.ts:11`) + decorator `@Cron` trong `CronjobService`. Mỗi lần chạy được ghi log vào bảng `cronjob_logs` (started/completed/failed).
+```mermaid
+graph TD
+    Sched[Cron Scheduler every 10 min] --> J1[cancel-expired-orders]
+    Sched --> J2[queue-maintenance]
+    J1 -->|Prisma| DB[(MySQL)]
+    J1 -->|Huy don NOT_DEFINED qua 30 phut, hoan ton kho| DB
+    J2 -->|emailQueue.clean| Redis[(Redis Bull Queue email)]
+    Ctrl[Cronjob Controller] -->|GET /cronjob/status logs email-queue/status| CS[Cronjob Service]
+```
 
 | Job (name) | Lịch | Tác vụ | Nguồn |
-|------------|------|--------|-------|
-| `cancel-expired-orders` | Mỗi 10 phút (`EVERY_10_MINUTES`) | Tìm order `PENDING` + `paymentMethod NOT_DEFINED` đã quá 30 phút → set `CANCELLED`, hoàn (increment) `quantity` và giảm (decrement) `sold` của product | `src/cronjob/services/cronjob.service.ts:32-112` |
-| `queue-maintenance` | Mỗi 10 phút (`EVERY_10_MINUTES`) | Dọn job `completed` > 1 ngày và `failed` > 7 ngày; log thống kê waiting/active/completed/failed | `src/cronjob/services/cronjob.service.ts:115-152` |
+|---|---|---|---|
+| `cancel-expired-orders` | mỗi 10 phút | Hủy order `PENDING` + `NOT_DEFINED` quá 30 phút, hoàn lại `quantity`/`sold` cho product | `src/cronjob/services/cronjob.service.ts:32` |
+| `queue-maintenance` | mỗi 10 phút | Dọn job `completed` cũ hơn 1 ngày trong queue `email`, giám sát queue | `src/cronjob/services/cronjob.service.ts:115` |
 
-```mermaid
-sequenceDiagram
-    participant Sched as NestJS Scheduler
-    participant Cron as CronjobService
-    participant DB as MySQL
-    participant Q as Bull Queue email
+| Queue | Job type | Producer | Consumer |
+|---|---|---|---|
+| `email` | `welcome` | `CronjobService.queueWelcomeEmail` (`cronjob.service.ts:156`) | `EmailProcessor.handleWelcomeEmail` (`email.processor.ts:26`) |
+| `email` | `password-reset` | (producer trong cronjob service) | `EmailProcessor.handlePasswordResetEmail` (`email.processor.ts`) |
+| `email` | `order-confirmation` | (producer trong cronjob service) | `EmailProcessor.handleOrderConfirmationEmail` (`email.processor.ts`) |
 
-    loop Moi 10 phut
-        Sched->>Cron: cancel-expired-orders
-        Cron->>DB: log started cronjob_logs
-        Cron->>DB: find orders PENDING NOT_DEFINED older 30m
-        Cron->>DB: updateMany status CANCELLED
-        Cron->>DB: restore product quantity giam sold
-        Cron->>DB: log completed
-    end
-    loop Moi 10 phut
-        Sched->>Cron: queue-maintenance
-        Cron->>Q: clean completed gt 1 day failed gt 7 days
-        Cron->>Q: getWaiting getActive getCompleted getFailed
-        Cron->>DB: log completed voi thong ke
-    end
-```
+---
 
-Bằng chứng logging: `logJobStart/logJobCompleted/logJobFailed` ghi vào `prisma.cronjobLog` (`src/cronjob/services/cronjob.service.ts:330-379`); bảng `cronjob_logs` (`prisma/schema.prisma:186-201`).
+## 5. Bản đồ phụ thuộc (từ CodeGraph)
 
-## 6. Mô hình dữ liệu (tóm tắt)
+Các quan hệ caller → callee nổi bật mà CodeGraph phát hiện giữa các module:
 
-Schema Prisma (MySQL) gồm: `User`, `Role`, `Permission`, `RolePermission` (RBAC); `Product`, `Cart`, `CartDetail`, `Order`, `OrderDetail` (thương mại); `EmailQueue`, `CronjobLog`, `Session` (hạ tầng/log). Soft delete qua cột `deletedAt` ở phần lớn bảng. Chi tiết ERD & data dictionary: Schema DB.
+| Caller | Callee | Ý nghĩa | Nguồn |
+|---|---|---|---|
+| `placeOrder` (products controller) | `handlePlaceOrder` (products service) | HTTP → business đặt hàng | `products.controller.ts:121` |
+| `handlePlaceOrder` (products) | `sendOrderConfirmationEmail` (mail) | products → mail (gọi SMTP trực tiếp) | `products.service.ts:235` → `mail.service.ts:109` |
+| `handleRegister` (auth controller) | `register` (auth service) | HTTP → đăng ký | `auth.controller.ts:29` |
+| `register` (auth service) | `create` (users service) | auth → users (tạo user) | `auth.service.ts:56` |
+| `register` (auth service) | `emit('user.registered')` (EventEmitter2) | auth → cronjob (gián tiếp qua event bus) | `auth.service.ts:59` |
+| `handleUserRegistered` (cronjob) | `queueWelcomeEmail` (cronjob) | event listener → producer queue | `cronjob.service.ts:24` |
+| `queueWelcomeEmail` (cronjob) | `emailQueue.add` (Bull/Redis) | producer enqueue job `welcome` | `cronjob.service.ts:156` |
+| `handleWelcomeEmail` (mail processor) | `sendWelcomeEmail` (mail service) | consumer → gửi mail | `email.processor.ts:26` → `mail.service.ts:50` |
+| `sendWelcomeEmail` / `sendOrderConfirmationEmail` | `sendEmail` (mail service) | render EJS + `mailerService.sendMail` | `mail.service.ts:14` |
+| `handleCancelExpiredOrders` (cronjob) | `prisma.order/product.*` | cron → MySQL hủy đơn + hoàn kho | `cronjob.service.ts:32` |
+| `handleQueueMaintenance` (cronjob) | `emailQueue.clean` | cron → dọn queue Redis | `cronjob.service.ts:115` |
 
-Bằng chứng: `prisma/schema.prisma` (toàn bộ); soft delete helper `prisma.softDelete` dùng tại `src/products/products.service.ts:102`.
+**Điểm khớp nối liên-module quan trọng:** `auth → users` (đồng bộ), `auth → cronjob` (bất đồng bộ qua EventEmitter2, không phụ thuộc compile-time), `cronjob → mail` (qua Bull queue), và `products → mail` (đồng bộ). Cronjob là module duy nhất vừa là **producer** queue vừa chứa **scheduler**, trong khi `mail` là **consumer**.
+
+---
 
 ## Source of truth
 
-- Code: `/Users/nhatnguyen/Documents/Github/code-demo/laptop-shop`
+- Code: `/Users/nhatnguyen/Documents/Github/code-demo/laptop-shop/src`
 - Catalog: `01_Raw/codebase/projects.json#laptop-shop`
+- Index: CodeGraph (`02_Wiki/06_Code_Graph/laptop-shop`)
 
 ## Liên kết
 
-- [[Index]]
 - [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực]]
 - [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền]]
+- [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Đơn hàng]]
 - [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|Cronjob & Email]]
-- [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]]
 - [[04_API_Specs/FEA_005_Quan_Ly_Vai_Tro|Vai trò]]
 - [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Người dùng]]
-- Schema DB
-
-## Cần human review
-
-- Hạ tầng triển khai thực tế (reverse proxy/HTTPS, host Redis/MySQL): suy ra từ `.env.example`, chưa có `docker-compose.yml` trong repo để xác nhận topology.
-- Bảng `EmailQueue` và `Session` tồn tại trong schema nhưng chưa thấy code thao tác trực tiếp (queue thực chạy qua Bull/Redis, không qua bảng `email_queue`) — cần xác nhận có phải di sản/để dành không.
+- [[06_Code_Graph/laptop-shop/README|Code Graph BE]]

@@ -1,125 +1,132 @@
 ---
-title: "FEA_001 — Xác thực & Phiên đăng nhập"
+title: "FEA_001 - Xác thực & Phiên đăng nhập"
 type: api-spec
 project: laptop-shop
 source:
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop/src/auth/auth.controller.ts"
+  - "local: src/auth/auth.controller.ts"
 status: draft
 last_synced: "2026-06-03"
 tags:
   - api-spec
-  - backend
+  - laptop-shop
   - auth
   - jwt
-  - laptop-shop
+  - authentication
 ---
 
 # FEA_001 — Xác thực & Phiên đăng nhập
 
-> Tài liệu liên quan: [[02_Design/SCR_002_Dang_Nhap|Màn Đăng nhập]] · [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền (Permissions)]] · [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|Cronjob & Hàng đợi email]] · [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý Người dùng]] · [[03_Architecture/laptop-shop_Architecture|Kiến trúc Backend]] · Schema Database
+> Spec này được lần luồng bằng **CodeGraph MCP** (callers/callees/impact) trên index `laptop-shop`, không đọc mò. Mọi claim đều kèm `file:line`.
 
 ## 1. Tổng quan
 
-Module `auth` chịu trách nhiệm **xác thực người dùng** và **quản lý phiên đăng nhập** theo cơ chế JWT (access token + refresh token). Module hỗ trợ 4 luồng chính: đăng nhập (login), đăng ký (register), làm mới token (refresh) và đăng xuất (logout).
+Module `AuthController` (`src/auth/auth.controller.ts:17`) cung cấp 4 endpoint cho vòng đời phiên đăng nhập dựa trên **JWT (access + refresh token)**:
 
-- Controller: `src/auth/auth.controller.ts` — prefix route `auth` (`auth.controller.ts:16`).
-- Service nghiệp vụ: `src/auth/auth.service.ts` (`auth.service.ts:10`).
-- Phụ thuộc: `UsersService` (truy vấn/cập nhật user), `JwtService` (ký/verify token), `ConfigService` (đọc TTL token), `EventEmitter2` (phát sự kiện `user.registered`) — `auth.service.ts:11-16`.
+- Đăng nhập bằng username/password (Passport `local` strategy).
+- Đăng ký tài khoản mới (phát event để gửi welcome email).
+- Làm mới access token bằng refresh token.
+- Đăng xuất (xóa refresh token khỏi DB).
 
-Cơ chế token:
-- Access token TTL mặc định `15m`, lấy từ env `JWT_ACCESS_TOKEN_EXPIRATION` (`auth.service.ts:32`).
-- Refresh token TTL mặc định `7d`, lấy từ env `JWT_REFRESH_TOKEN_EXPIRATION` (`auth.service.ts:36`).
-- Refresh token được lưu vào DB (cột `users.refresh_token`) để hỗ trợ thu hồi (`auth.service.ts:40`, `schema.prisma:29`).
+Toàn bộ logic nghiệp vụ nằm ở `AuthService` (`src/auth/auth.service.ts:10`). Controller chỉ là lớp mỏng forward request.
 
-## 2. Danh sách APIs
+## 2. Chuỗi gọi thật (CodeGraph)
 
-Tất cả endpoint dưới prefix `auth`. Route `login`/`register`/`refresh` được đánh dấu `@Public()` (bỏ qua `JwtAuthGuard`); `logout` yêu cầu access token hợp lệ.
+CodeGraph callees/callers cho thấy chuỗi gọi controller → service → repository như sau:
 
-### 2.1 POST `/auth/login`
+```
+POST /auth/login    → handleLogin       (auth.controller.ts:22)
+                        ↳ LocalAuthGuard → LocalStrategy.validate (local.strategy.ts:12)
+                            ↳ AuthService.validateUser           (auth.service.ts:18)
+                                ↳ UsersService.findByUsername     (users.service.ts:102) → prisma.user.findUnique
+                                ↳ comparePassword                 (common/utils/password.util)
+                        ↳ AuthService.login                       (auth.service.ts:28)
+                            ↳ JwtService.sign (x2)
+                            ↳ UsersService.updateRefreshToken     (users.service.ts:177) → UsersService.update → prisma.user.update
 
-- Guard: `LocalAuthGuard` (passport `local`) → xác thực username/password trước khi vào handler (`auth.controller.ts:20`, `local-auth.guard.ts:5`).
-- Đầu vào (body, do `local.strategy` xử lý):
+POST /auth/register → handleRegister     (auth.controller.ts:29)
+                        ↳ AuthService.register                    (auth.service.ts:48)
+                            ↳ UsersService.create                 (users.service.ts:16) → prisma.user.create
+                            ↳ EventEmitter2.emit('user.registered') → [FEA_003] CronjobService.handleUserRegistered
 
-```json
-{
-  "username": "user@example.com",
-  "password": "secret123"
-}
+POST /auth/refresh  → handleRefreshToken (auth.controller.ts:37)
+                        ↳ AuthService.refreshToken                (auth.service.ts:73)
+                            ↳ JwtService.verify
+                            ↳ UsersService.findByRefreshToken     (users.service.ts) → prisma.user.findUnique
+                            ↳ UsersService.updateRefreshToken     → prisma.user.update
+
+POST /auth/logout   → handleLogout       (auth.controller.ts:45)
+                        ↳ JwtAuthGuard (JwtStrategy.validate, jwt.strategy.ts:16)
+                        ↳ AuthService.logout                      (auth.service.ts:112)
+                            ↳ UsersService.updateRefreshToken(userId, null) → prisma.user.update
 ```
 
-- Logic: `validateUser()` tìm user theo username, so khớp mật khẩu bằng `comparePassword` (bcrypt) (`auth.service.ts:18-26`). Nếu hợp lệ → `login()` ký access + refresh token với payload `{ username, sub: user.id }` và lưu refresh token vào DB (`auth.service.ts:28-46`).
-- Đầu ra:
+> **Phát hiện nhờ CodeGraph (mà đọc tay dễ bỏ sót):** `register` không chỉ tạo user — nó `emit('user.registered')` (`auth.service.ts:59`). CodeGraph callees nối thẳng tới `CronjobService.handleUserRegistered` (`cronjob.service.ts:24`) → `queueWelcomeEmail` (`cronjob.service.ts:156`). Tức là **luồng đăng ký FEA_001 nối liền với hàng đợi email FEA_003** qua event-driven, một liên kết ẩn không thể grep ra.
 
-```json
-{
-  "access_token": "<jwt>",
-  "refresh_token": "<jwt>"
-}
-```
+## 3. Danh sách API
 
-### 2.2 POST `/auth/register`
+Prefix controller: `@Controller('auth')` (`auth.controller.ts:16`). Đường dẫn thực tế có thể kèm global prefix `/api` (xem `main.ts`).
 
-- `@Public()`, `@ResponseMessage('User registered successfully')` (`auth.controller.ts:26-28`).
-- Đầu vào — `RegisterUserDto` (`dto/register-user.dto.ts`):
+### 3.1 POST /auth/login
+- **Guard:** `@Public()` + `@UseGuards(LocalAuthGuard)` (`auth.controller.ts:19-20`). Local strategy tự validate user trước khi vào handler.
+- **Payload:** `{ "username": string, "password": string }` (đọc bởi `LocalStrategy.validate`, `local.strategy.ts:12`).
+- **Logic:** `validateUser` so khớp password bằng `comparePassword`; nếu sai → `UnauthorizedException` (`local.strategy.ts:15`).
+- **Response:** `{ access_token, refresh_token }` (`auth.service.ts:42-45`).
 
-```json
-{
-  "username": "user@example.com",
-  "password": "secret123",
-  "confirmPassword": "secret123",
-  "fullName": "Nguyen Van A"
-}
-```
+### 3.2 POST /auth/register
+- **Guard:** `@Public()` (`auth.controller.ts:27`), kèm `@ResponseMessage('User registered successfully')`.
+- **Payload:** `RegisterUserDto` — `{ username, password, fullName, ... }`. `confirmPassword` (nếu có) bị loại bỏ khi tạo user (`auth.service.ts:50-54`).
+- **Response:** `{ id, username, fullName }` (`auth.service.ts:66-70`).
 
-- Validation (class-validator):
-  - `username`: phải là email hợp lệ — `@IsEmail` (`register-user.dto.ts:5`).
-  - `password`: string, tối thiểu 6 ký tự (`register-user.dto.ts:8-9`).
-  - `confirmPassword`: string, tối thiểu 6 ký tự, phải **khớp** `password` qua validator tùy biến `@MatchPassword('password')` (`register-user.dto.ts:12-17`).
-  - `fullName`: string, không rỗng (`register-user.dto.ts:19-21`).
-- Logic: `register()` chỉ lấy `username/password/fullName` (loại bỏ `confirmPassword`), gọi `userService.create()`, sau đó **phát event `user.registered`** để gửi welcome email bất đồng bộ qua queue (`auth.service.ts:48-65`). Xem [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|Cronjob & Hàng đợi email]].
-- Đầu ra: `{ id, username, fullName }` (`auth.service.ts:66-70`).
+### 3.3 POST /auth/refresh
+- **Guard:** `@Public()` + `@HttpCode(200)` (`auth.controller.ts:34-36`).
+- **Payload:** `RefreshTokenDto` — `{ "refreshToken": string }` (`src/auth/dto/refresh-token.dto.ts:3`).
+- **Response:** `{ access_token, refresh_token }` mới (`auth.service.ts:103-106`).
 
-### 2.3 POST `/auth/refresh`
+### 3.4 POST /auth/logout
+- **Guard:** `@UseGuards(JwtAuthGuard)` + `@HttpCode(200)` (`auth.controller.ts:42-44`).
+- **Payload:** không có body; lấy `req.user.sub` từ JWT (`auth.controller.ts:46`).
+- **Response:** `{ message: 'Logout successful' }` (`auth.service.ts:115`).
 
-- `@Public()`, `@HttpCode(200)`, `@ResponseMessage('Token refreshed successfully')` (`auth.controller.ts:33-37`).
-- Đầu vào — `RefreshTokenDto`:
+## 4. Business Logic (Quy tắc Nghiệp vụ)
 
-```json
-{ "refreshToken": "<jwt>" }
-```
+- **Cấp token kép:** access token (`JWT_ACCESS_TOKEN_EXPIRATION`, mặc định `15m`) và refresh token (`JWT_REFRESH_TOKEN_EXPIRATION`, mặc định `7d`) — `auth.service.ts:31-37`.
+- **Refresh token lưu DB:** mỗi lần login/refresh, refresh token được ghi vào cột `refreshToken` của user qua `updateRefreshToken` (`auth.service.ts:40, 101`). Logout set về `null` (`auth.service.ts:114`).
+- **Validate refresh:** `refreshToken` verify chữ ký JWT **và** đối chiếu token trong DB (`findByRefreshToken`) + so `user.id === payload.sub` (`auth.service.ts:78-85`). Mọi lỗi → `UnauthorizedException('Invalid refresh token')` (`auth.service.ts:108`).
+- **Đăng ký phát event:** `emit('user.registered', {...})` để bộ phận cronjob xếp welcome email vào queue (`auth.service.ts:59-64`). Đây là xử lý bất đồng bộ, không block response đăng ký.
+- **Account type mặc định:** user mới tạo có `accountType = SYSTEM` và `roleId` = role `CUSTOMER` (`users.service.ts:40-41`).
+- **Không lộ password:** `validateUser` loại field `password` khỏi object trả về (`auth.service.ts:22`).
 
-  - `refreshToken`: string, không rỗng (`refresh-token.dto.ts:4-6`).
-- Logic: `refreshToken()` verify chữ ký token → tìm user theo refresh token trong DB → đối chiếu `user.id === payload.sub`; nếu không khớp ném `UnauthorizedException`. Nếu hợp lệ → ký cặp token mới và cập nhật lại refresh token trong DB (token rotation) (`auth.service.ts:73-110`).
-- Đầu ra: `{ access_token, refresh_token }`.
+## 5. Database tương tác
 
-### 2.4 POST `/auth/logout`
+Truy cập DB qua Prisma (không có repository riêng — service gọi thẳng `PrismaService`):
 
-- Guard: `JwtAuthGuard`, `@HttpCode(200)`, `@ResponseMessage('Logout successful')` (`auth.controller.ts:41-44`).
-- Đầu vào: không có body; lấy user từ `req.user.sub` (`auth.controller.ts:46`).
-- Logic: `logout()` set `refresh_token = null` trong DB để vô hiệu hóa phiên (`auth.service.ts:112-116`).
-- Đầu ra: `{ message: 'Logout successful' }`.
+| Bảng | Thao tác | Vị trí |
+|------|----------|--------|
+| `user` | `findUnique` (theo username, kèm role) | `users.service.ts:102` (findByUsername) |
+| `user` | `create` (đăng ký) | `users.service.ts:32` |
+| `user` | `update` (ghi/xóa refreshToken) | `users.service.ts:115` (qua updateRefreshToken) |
+| `user` | `findUnique` (theo refreshToken) | findByRefreshToken |
+| `role` | `findFirst` (role CUSTOMER khi tạo user) | `users.service.ts:28` |
 
-## 3. Business Logic (Quy tắc nghiệp vụ)
+## 6. Phạm vi ảnh hưởng (impact)
 
-1. **Xác thực mật khẩu**: so khớp bằng `comparePassword` (bcrypt). Mật khẩu không bao giờ trả về client — bị loại khỏi object user (`auth.service.ts:22-23`).
-2. **Token rotation**: mỗi lần login/refresh đều sinh refresh token mới và ghi đè trong DB; refresh token cũ trở nên vô hiệu (`auth.service.ts:40`, `auth.service.ts:101`).
-3. **Thu hồi phiên**: logout xóa refresh token trong DB → refresh sau đó thất bại (`auth.service.ts:114`).
-4. **Public routes**: `JwtAuthGuard` đọc metadata `isPublic` để bỏ qua xác thực cho login/register/refresh (`jwt-auth.guard.ts:15-22`, `customize.ts:7-8`).
-5. **Side-effect đăng ký**: phát event `user.registered` → consumer trong [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|cronjob/email]] đẩy welcome email vào Bull queue (`auth.service.ts:59-64`).
+`codegraph_impact AuthService` → **21 symbol** phụ thuộc. Nếu sửa `AuthService`, các điểm sau bị ảnh hưởng:
 
-### Điểm cần human review (phát hiện lệch code)
+- `src/auth/auth.service.ts`: `validateUser:18`, `login:28`, `register:48`, `refreshToken:73`, `logout:112`.
+- `src/auth/passport/local.strategy.ts`: `LocalStrategy:7`, `validate:12` (gọi `validateUser`).
+- `src/auth/auth.controller.ts`: cả 4 handler + 4 route (`POST /auth/login|register|refresh|logout`).
 
-- **`req.user.sub` vs `req.user.userId`**: `JwtStrategy.validate()` trả về object `{ userId, username }` (`passport/jwt.strategy.ts:16-18`), KHÔNG có trường `sub`. Tuy nhiên handler `handleLogout` lại đọc `req.user.sub` (`auth.controller.ts:46`) → giá trị có thể là `undefined`, dẫn tới logout không tìm đúng user. Cần xác nhận hành vi thực tế. (Liên quan cùng kiểu lỗi ở [[04_API_Specs/FEA_002_Phan_Quyen|FEA_002]].)
-- `validateUser` nhận `user.password` từ bảng `users` — cần đảm bảo mật khẩu được hash khi tạo user (ở [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý Người dùng]]).
+Phụ thuộc xuôi (callees): `UsersService.findByUsername / create / updateRefreshToken / findByRefreshToken`, `JwtService.sign|verify`, `EventEmitter2.emit` → `CronjobService`.
 
-## 4. Database tương tác
+## 7. Liên kết
 
-| Bảng (`@@map`) | Model Prisma | Vai trò trong feature |
-|---|---|---|
-| `users` | `User` | Tìm user theo username/refresh token, lưu `refresh_token`, tạo user mới (`schema.prisma:19-38`) |
-| `roles` | `Role` | Gắn `roleId` mặc định `1` khi tạo user; dùng cho phân quyền (`schema.prisma:28`, `schema.prisma:40-51`) |
+- [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền (Permissions)]]
+- [[04_API_Specs/FEA_003_Cronjob_Hang_Doi_Email|Cronjob & Hàng đợi email]] — nơi nhận event `user.registered`
+- [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý Người dùng]] — `UsersService` được inject vào `AuthService`
+- [[03_Architecture/laptop-shop_Architecture|Kiến trúc Backend]]
+- [[06_Code_Graph/laptop-shop/auth/SKILL|Code Graph — module auth]]
 
-- Cột chính: `users.refresh_token` (`@map("refresh_token")`, nullable) là nơi lưu phiên hiện hành (`schema.prisma:29`).
-- Lưu ý: tồn tại model `Session` (`schema.prisma:10-17`) nhưng luồng auth JWT này **không** dùng tới nó; có thể là cơ chế session cũ — cần human review.
+## 8. Cần human review
 
-Tương tác DB thực hiện gián tiếp qua `UsersService` (`findByUsername`, `findByRefreshToken`, `updateRefreshToken`, `create`) — chi tiết ở [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý Người dùng]].
+- DTO `login` không có class validator riêng (validate trong Passport local strategy) — cần xác nhận quy tắc password/username.
+- `refreshToken` dùng `JwtService.verify` với secret mặc định; cần kiểm tra có dùng đúng secret cho refresh token không.

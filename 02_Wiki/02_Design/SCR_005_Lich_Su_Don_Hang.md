@@ -6,62 +6,58 @@ source:
   - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop-angular/src/app/client/order-history/order-history.component.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [screen, frontend, angular, order, order-history]
+tags: [screen, frontend, angular, order, history]
 ---
 
 # Lịch sử đơn hàng · SCR_005
 
-> Nguồn: code-reader (không có Figma node). Mọi claim kèm `file:line`.
+> Nguồn: CodeGraph MCP + code-reader (không có Figma node). Mọi claim kèm `file:line`.
 
 ## Tổng quan màn hình
 
-Lịch sử đơn hàng (`/order-history`) liệt kê tất cả đơn hàng của người dùng đã đăng nhập, kèm trạng thái thanh toán/giao hàng, thông tin người nhận và danh sách sản phẩm từng đơn. Yêu cầu đăng nhập (`authGuard`). Màn hình chỉ đọc (read-only).
+Màn hình lịch sử đơn hàng (`/order-history`) liệt kê các đơn đã đặt của user kèm tổng tiền, phương thức/trạng thái thanh toán, thông tin người nhận và chi tiết sản phẩm trong từng đơn.
 
-- Route: `path: 'order-history'`, `canActivate: [authGuard]`, lazy `loadComponent`. `app.routes.ts:26-31`
-- Component standalone, `OnPush`. `order-history.component.ts:44-47`
-- Liên quan: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]], [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc Frontend]], [[02_Design/SCR_006_Chi_Tiet_Don_Hang|Chi tiết đơn hàng]], [[02_Design/SCR_007_Chi_Tiet_San_Pham|Chi tiết sản phẩm]], [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]].
+- Route: `path: 'order-history'` → `OrderHistoryComponent`, lazy, guard `authGuard`. `app.routes.ts:27-31`
+- Component standalone dùng signals, `implements OnInit`. `order-history.component.ts:339`
 
-## Thành phần UI chính
+## Thành phần UI
 
-| Thành phần | Mô tả | file:line |
-|---|---|---|
-| `app-client-header` | Header chung, nhận user + cartCount | `order-history.component.ts:49` |
-| State boxes | loading / error / empty (chưa có đơn) có CTA "Mua sắm ngay" | `order-history.component.ts:58-66` |
-| Order card | `@for order of orders()`: mã đơn `#id`, ngày tạo | `order-history.component.ts:69-83` |
-| Status chips | `paymentStatus` (xanh khi `PAYMENT_SUCCESS`) + `status` | `order-history.component.ts:77-82` |
-| Summary grid | Tổng tiền, phương thức, người nhận, điện thoại, địa chỉ | `order-history.component.ts:85-106` |
-| Detail list | `@for detail of order.orderDetails`: ảnh, tên (link `/products/:id`), số lượng × giá | `order-history.component.ts:108-125` |
+- Danh sách đơn từ `orders()` signal; mỗi đơn có `orderDetails[]` (interface `HistoryOrder`). `order-history.component.ts:30-42,348`
+- Format hiển thị: `formatCurrency` (VND), `formatDate` (vi-VN), `getProductImage`. `order-history.component.ts:356,363,375`
+- Trạng thái: `isLoading()`, banner lỗi `errorMessage()`. `order-history.component.ts:349-350`
 
 ## Luồng tương tác
 
-1. `ngOnInit()` → `loadOrdersHistory()`. `order-history.component.ts:352-354`
-2. Mỗi sản phẩm trong đơn là link `routerLink ['/products', productId]` → màn chi tiết sản phẩm. `order-history.component.ts:117`
-3. Ảnh lỗi → fallback `default-laptop.jpg`. `order-history.component.ts:114`
-4. Link "Quay về trang chủ" / "Mua sắm ngay" → `/`. `order-history.component.ts:55,65`
+1. `ngOnInit` → `loadOrdersHistory()`. `order-history.component.ts:352-354`
+2. `loadOrdersHistory` GET orders-history; `map` chuẩn hoá response (array hoặc `{ data }`). `order-history.component.ts:383-392`
+3. Lỗi → log, set `errorMessage` "Không thể tải lịch sử đơn hàng." rồi trả mảng rỗng. `order-history.component.ts:393-397`
+4. `finalize` tắt `_isLoading`; subscribe set `_orders`. `order-history.component.ts:398-402`
 
-## API / service gọi tới
+## Service / API gọi tới
 
-| Method | Path | Mục đích | file:line |
-|---|---|---|---|
-| GET | `/api/v1/products/orders-history` | Lấy danh sách đơn hàng của user | `order-history.component.ts:384` |
-| (service) | `AuthService` cung cấp `currentUser` + `totalItemsInCart` cho header | Hiển thị header | `order-history.component.ts:49,340` |
-
-Response được chuẩn hóa linh hoạt: chấp nhận cả mảng trực tiếp hoặc `{ data: [] }`. `order-history.component.ts:386-392`
-
-→ Backend liên quan: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]].
-
-## State / dữ liệu
-
-Signals: `order-history.component.ts:344-350`
-
-| Signal | Kiểu | file:line |
+| Hành động | Method + Path | file:line |
 |---|---|---|
-| `_orders` / `orders` | `HistoryOrder[]` | `order-history.component.ts:344,348` |
-| `_isLoading` / `isLoading` | `boolean` | `order-history.component.ts:345,349` |
-| `_errorMessage` / `errorMessage` | `string` | `order-history.component.ts:346,350` |
+| Tải lịch sử đơn | `GET /api/v1/products/orders-history` | `order-history.component.ts:384` |
 
-- `HistoryOrder`: `{ id, totalPrice, paymentMethod, paymentStatus, receiverAddress/Name/Phone, status, createdAt, updatedAt, orderDetails[] }`. `order-history.component.ts:30-42`
-- `HistoryOrderDetail`: `{ id, price, quantity, productId, product: { id, name, image } }`. `order-history.component.ts:22-28`
-- Helper hiển thị: `formatCurrency` (Intl VND), `formatDate` (Intl vi-VN, fallback raw nếu date không hợp lệ), `getProductImage`. `order-history.component.ts:356-377`
+> Component chỉ inject `AuthService` (readonly, cho header) + `HttpClient`; chỉ 1 endpoint HTTP. `order-history.component.ts:340-341`
 
-Lỗi tải → set `errorMessage` "Không thể tải lịch sử đơn hàng." và trả mảng rỗng. `order-history.component.ts:393-397`
+## Component gọi service nào (CodeGraph callees)
+
+- `OrderHistoryComponent.ngOnInit` → `loadOrdersHistory`. `order-history.component.ts:353`
+- `OrderHistoryComponent.loadOrdersHistory` → `HttpClient.get` + RxJS `map`/`catchError`/`finalize`. `order-history.component.ts:383-399`
+- `authService` field = `inject(AuthService)` (dùng cho header, không có cạnh HTTP riêng trong component). `order-history.component.ts:340`
+
+> CodeGraph explore xác nhận file chỉ chứa 1 lệnh `http.get` — không có ghi/đặt đơn ở màn này (chỉ đọc).
+
+## State
+
+- Signals nội bộ: `_orders`, `_isLoading` (init true), `_errorMessage`. `order-history.component.ts:344-346`
+- Public readonly: `orders`, `isLoading`, `errorMessage`. `order-history.component.ts:348-350`
+- Không ghi global state; chỉ đọc user qua AuthService cho header. `order-history.component.ts:340`
+
+## Liên kết
+
+- Backend: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]], [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực]]
+- Màn hình: [[02_Design/SCR_006_Chi_Tiet_Don_Hang|Chi tiết đơn hàng]], [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]]
+- Kiến trúc: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc FE]]
+- Code graph: [[06_Code_Graph/laptop-shop-angular/client/SKILL|Code Graph client]]

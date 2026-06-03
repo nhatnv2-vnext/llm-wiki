@@ -11,65 +11,57 @@ tags: [screen, frontend, angular, cart, checkout]
 
 # Giỏ hàng · SCR_003
 
-> Nguồn: code-reader (không có Figma node). Mọi claim kèm `file:line`.
+> Nguồn: CodeGraph MCP + code-reader (không có Figma node). Mọi claim kèm `file:line`.
 
 ## Tổng quan màn hình
 
-Giỏ hàng (`/cart`) liệt kê các sản phẩm đã thêm, cho phép tăng/giảm số lượng, xóa (qua modal xác nhận) và **đặt hàng**. Yêu cầu đăng nhập (`authGuard`).
+Màn hình giỏ hàng (`/cart`) hiển thị các sản phẩm đã thêm, cho phép tăng/giảm số lượng, xoá sản phẩm (qua modal xác nhận) và đặt hàng. Thay đổi số lượng được đồng bộ optimistic lên server trước khi checkout.
 
-- Route: `path: 'cart'`, `canActivate: [authGuard]`, lazy `loadComponent`. `app.routes.ts:16-20`
-- `authGuard`: chưa xác thực → `createUrlTree(['/login'], { returnUrl: state.url })`. `auth.guard.ts:5-21`
-- Component standalone, `OnPush`. `cart.component.ts:36-39`
-- Liên quan: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]], [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc Frontend]], [[02_Design/SCR_006_Chi_Tiet_Don_Hang|Chi tiết đơn hàng]], [[02_Design/SCR_007_Chi_Tiet_San_Pham|Chi tiết sản phẩm]], [[02_Design/SCR_005_Lich_Su_Don_Hang|Lịch sử đơn hàng]].
+- Route: `path: 'cart'` → `CartComponent`, lazy, guard `authGuard` (yêu cầu đăng nhập). `app.routes.ts:17-19`
+- Component standalone dùng signals, `implements OnInit`. `cart.component.ts:474`
 
-## Thành phần UI chính
+## Thành phần UI
 
-| Thành phần | Mô tả | file:line |
-|---|---|---|
-| State boxes | loading / error / empty (giỏ trống) có CTA về `/` | `cart.component.ts:50-58` |
-| Danh sách item | `@for item of cartItems()`: ảnh, tên (link `/products/:id`), mô tả, giá | `cart.component.ts:60-103` |
-| Qty box | nút `-` / `+` với số lượng; `+` disabled khi `>=` tồn kho | `cart.component.ts:80-99` |
-| Summary card | Số sản phẩm, Tạm tính, Tổng thanh toán, nút "Đặt hàng" | `cart.component.ts:105-135` |
-| Modal xác nhận xóa | Overlay + dialog, đóng bằng click ngoài hoặc phím Escape | `cart.component.ts:140-156` |
+- Danh sách item từ `cartItems()`; tổng tiền `totalPrice()`. `cart.component.ts:491-492`
+- Nút tăng/giảm số lượng → `increaseQuantity` / `decreaseQuantity`. `cart.component.ts:538,556`
+- Modal xoá (`isDeleteModalOpen()`) với `confirmDeleteFromModal` / `closeDeleteModal`; đóng bằng phím Esc (`@HostListener`). `cart.component.ts:498-503,579,588`
+- Nút **Đặt hàng** → `onPlaceOrder()`. `cart.component.ts:600`
+- Thông báo trạng thái: `actionMessage()`, `errorMessage()`, cờ `isUpdatingCart()`, `isPlacingOrder()`. `cart.component.ts:493-497`
 
 ## Luồng tương tác
 
-1. `ngOnInit()` → `loadCart()`. `cart.component.ts:505-507`
-2. `increaseQuantity(id)`: chặn vượt tồn kho, cập nhật optimistic rồi `pushUpdatedCart`. `cart.component.ts:538-554`
-3. `decreaseQuantity(id)`: nếu số lượng = 1 → mở modal xóa; ngược lại giảm 1 + `pushUpdatedCart`. `cart.component.ts:556-577`
-4. `pushUpdatedCart`: cập nhật signal optimistic, gọi update-cart; lỗi → rollback `previousItems`. `cart.component.ts:653-686`
-5. Xác nhận xóa trong modal → `confirmDeleteFromModal()` → `deleteProductInCart()` (xóa rồi đồng bộ lại giỏ). `cart.component.ts:588-598,688-735`
-6. `onPlaceOrder()`: POST place-order, lấy `orderId` (linh hoạt số / `{id}` / `{orderId}`), reset cartCount=0, điều hướng `/order/:id`. `cart.component.ts:600-631`
-7. Escape đóng modal qua `@HostListener('document:keydown.escape')`. `cart.component.ts:500-503`
+1. `ngOnInit` → `loadCart()` GET cart, set items + tổng tiền; nếu rỗng `authService.setCartCount(0)`. `cart.component.ts:505-535`
+2. Tăng số lượng kiểm tra tồn kho `item.product.quantity`; giảm về 1 thì mở modal xoá. `cart.component.ts:545,567-568`
+3. Thay đổi → `pushUpdatedCart` cập nhật signal optimistic rồi POST update-cart; lỗi rollback về `previousItems`. `cart.component.ts:653-686`
+4. Xoá item → `deleteProductInCart` POST delete rồi `switchMap` POST update-cart đồng bộ. `cart.component.ts:688-735`
+5. Đặt hàng → `onPlaceOrder` POST place-order, lấy orderId qua `extractOrderId`, `setCartCount(0)`, điều hướng `/order/{id}`. `cart.component.ts:600-630`
 
-## API / service gọi tới
+## Service / API gọi tới
 
-| Method | Path | Mục đích | file:line |
-|---|---|---|---|
-| GET | `/api/v1/products/cart` | Lấy giỏ (`cartDetails`, `totalPrice`) | `cart.component.ts:515` |
-| POST | `/api/v1/products/update-cart-before-checkout` body `{ currentCartDetail: [{id,quantity}] }` | Đồng bộ số lượng giỏ | `cart.component.ts:668,721` |
-| POST | `/api/v1/products/delete-product-in-cart/{cartDetailId}` | Xóa 1 dòng giỏ | `cart.component.ts:693` |
-| POST | `/api/v1/products/place-order` body `{ totalPrice }` | Tạo đơn hàng | `cart.component.ts:610` |
-| (service) | `AuthService.setCartCount(n)` → NgRx + localStorage | Đồng bộ badge giỏ | `cart.component.ts:628,762`, `auth.service.ts:146` |
-
-→ Backend liên quan: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]].
-
-## State / dữ liệu
-
-Signals: `cart.component.ts:481-498`
-
-| Signal | Kiểu | file:line |
+| Hành động | Method + Path | file:line |
 |---|---|---|
-| `_cartItems` / `cartItems` | `CartDetail[]` | `cart.component.ts:481,491` |
-| `_totalPrice` / `totalPrice` | `number` | `cart.component.ts:482,492` |
-| `_isLoading` | `boolean` | `cart.component.ts:483,493` |
-| `_isUpdatingCart` | `boolean` | `cart.component.ts:484,494` |
-| `_isPlacingOrder` | `boolean` | `cart.component.ts:485,495` |
-| `_errorMessage` / `_actionMessage` | `string` | `cart.component.ts:486-487,496-497` |
-| `_isDeleteModalOpen` / `_pendingDeleteCartDetailId` | `boolean` / `number\|null` | `cart.component.ts:488-489,498` |
+| Tải giỏ hàng | `GET /api/v1/products/cart` | `cart.component.ts:515` |
+| Cập nhật giỏ trước checkout | `POST /api/v1/products/update-cart-before-checkout` | `cart.component.ts:668,721` |
+| Xoá sản phẩm | `POST /api/v1/products/delete-product-in-cart/{id}` | `cart.component.ts:693` |
+| Đặt hàng | `POST /api/v1/products/place-order` body `{ totalPrice }` | `cart.component.ts:610` |
+| Cập nhật badge giỏ | `AuthService.setCartCount` (NgRx) | `auth.service.ts:146` |
 
-- `CartDetail`: `{ id, price, quantity, cartId, productId, product: Product }`. `cart.component.ts:17-24`
-- `totalItems()` = tổng quantity; `recalculateTotals()` ưu tiên `serverTotal`, fallback tính client + đồng bộ cartCount. `cart.component.ts:633-635,759-763`
-- Helper `formatCurrency` (Intl VND), `getProductImage` (fallback default). `cart.component.ts:637-646`
+## Component gọi service nào (CodeGraph callees)
 
-> Lưu ý: thao tác tăng/giảm là optimistic update kèm rollback khi API lỗi. `cart.component.ts:670-675`
+- `CartComponent.loadCart` → `AuthService.setCartCount`. `cart.component.ts:529`
+- `CartComponent.onPlaceOrder` → `_totalPrice`, `extractOrderId`, `AuthService.setCartCount`, `router.navigate`. `cart.component.ts:611,614,628-629`
+- `CartComponent.increaseQuantity`/`decreaseQuantity` → `pushUpdatedCart` → `HttpClient.post` + `recalculateTotals`. `cart.component.ts:553,653-668`
+- `AuthService.setCartCount` → `AuthActions.setTotalItemsInCart`. `auth.service.ts:148`
+
+## State
+
+- Signals nội bộ: `_cartItems`, `_totalPrice`, `_isLoading`, `_isUpdatingCart`, `_isPlacingOrder`, `_errorMessage`, `_actionMessage`, `_isDeleteModalOpen`, `_pendingDeleteCartDetailId`. `cart.component.ts:481-489`
+- Đồng bộ optimistic: signal cập nhật trước HTTP, rollback khi lỗi. `cart.component.ts:657,672`
+- Global state: badge giỏ (`totalItemsInCart`) qua NgRx auth. `auth.service.ts:146-148`
+
+## Liên kết
+
+- Backend: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]], [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực]]
+- Màn hình: [[02_Design/SCR_007_Chi_Tiet_San_Pham|Chi tiết sản phẩm]]
+- Kiến trúc: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc FE]]
+- Code graph: [[06_Code_Graph/laptop-shop-angular/client/SKILL|Code Graph client]]

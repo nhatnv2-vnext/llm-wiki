@@ -3,119 +3,98 @@ title: "FEA_005 - Quản lý Vai trò (Roles)"
 type: api-spec
 project: laptop-shop
 source:
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop/src/roles/roles.controller.ts"
+  - "local: src/roles/roles.controller.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [api-spec, backend, nestjs, roles, rbac, permissions, laptop-shop]
+tags:
+  - api-spec
+  - laptop-shop
+  - roles
+  - rbac
+  - permissions
 ---
 
 # FEA_005 — Quản lý Vai trò (Roles)
 
-> Module quản trị RBAC: tạo/sửa/xoá vai trò và gán quyền (permissions) cho từng vai trò.
-> Controller: `src/roles/roles.controller.ts` · Service: `src/roles/roles.service.ts`
+> Lần luồng thật bằng CodeGraph MCP (`codegraph_context` / `codegraph_explore` / `codegraph_impact`) trên project `laptop-shop`. Mọi claim kèm `file:line`.
 
-## Tổng quan
+## 1. Tổng quan
 
-`RolesController` cung cấp CRUD cho vai trò và các thao tác gán/đọc quyền. Toàn bộ controller bảo vệ bởi `@UseGuards(JwtAuthGuard, PermissionGuard)` (`roles.controller.ts:21`). Hầu hết endpoint yêu cầu `admin:manage_roles`; riêng các thao tác liên quan danh sách/gán quyền yêu cầu `admin:manage_permissions`.
+Module `roles` quản lý vai trò (RBAC) và việc gán permission cho vai trò. Đây là tầng quản trị: mọi route đòi permission `ADMIN_MANAGE_ROLES` hoặc `ADMIN_MANAGE_PERMISSIONS`.
 
-Prefix toàn cục `api` (`src/main.ts:37`) → route đầy đủ `/api/roles/...`.
+Toàn bộ controller bảo vệ bởi `JwtAuthGuard` + `PermissionGuard` (`src/roles/roles.controller.ts:21`). `RolesService` chỉ inject `PrismaService` (`src/roles/roles.service.ts:12`).
 
-Tài liệu liên quan:
-- Frontend: Quản lý vai trò, Phân quyền
-- Feature liên quan: [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Quản lý người dùng]], [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền (Permissions)]], [[04_API_Specs/FEA_001_Xac_Thuc|Xác thực & phiên đăng nhập]], [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm, Giỏ hàng & Đơn hàng]]
-- Kiến trúc: [[03_Architecture/laptop-shop_Architecture|Kiến trúc Backend]]
-- Database: Schema laptop-shop
+Đặc trưng nghiệp vụ:
+- **Soft-delete** vai trò (set `deletedAt`), chặn xóa nếu còn user đang gán.
+- Gán permission qua bảng nối `rolePermission` (xóa hết rồi tạo lại — replace toàn bộ).
+- Validate permission tồn tại trước khi gán.
 
-## Danh sách APIs
+## 2. Danh sách API
 
-| # | Method | URL | Permission | Service gọi |
-|---|--------|-----|------------|-------------|
-| 1 | POST | `/api/roles` | `admin:manage_roles` | `create()` |
-| 2 | GET | `/api/roles` | `admin:manage_roles` | `findAll()` |
-| 3 | GET | `/api/roles/permissions/available` | `admin:manage_permissions` | `getAllPermissions()` |
-| 4 | GET | `/api/roles/:id` | `admin:manage_roles` | `findOne()` |
-| 5 | GET | `/api/roles/:id/permissions` | `admin:manage_roles` | `getRolePermissions()` |
-| 6 | PATCH | `/api/roles/:id` | `admin:manage_roles` | `update()` |
-| 7 | PUT | `/api/roles/:id/permissions` | `admin:manage_permissions` | `updateRolePermissions()` |
-| 8 | DELETE | `/api/roles/:id` | `admin:manage_roles` | `remove()` (soft delete) |
+| # | Method | URL | Permission | Payload chính | Handler |
+|---|--------|-----|------------|---------------|---------|
+| 1 | POST | `/api/roles` | `ADMIN_MANAGE_ROLES` | `CreateRoleDto` (`{ name, description?, permissionNames?[] }`) | `create` (`roles.controller.ts:27`) |
+| 2 | GET | `/api/roles` | `ADMIN_MANAGE_ROLES` | — | `findAll` (`:33`) |
+| 3 | GET | `/api/roles/permissions/available` | `ADMIN_MANAGE_PERMISSIONS` | — | `getAllPermissions` (`:39`) |
+| 4 | GET | `/api/roles/:id` | `ADMIN_MANAGE_ROLES` | param `id` | `findOne` (`:45`) |
+| 5 | GET | `/api/roles/:id/permissions` | `ADMIN_MANAGE_ROLES` | param `id` | `getRolePermissions` (`:51`) |
+| 6 | PATCH | `/api/roles/:id` | `ADMIN_MANAGE_ROLES` | `UpdateRoleDto` | `update` (`:57`) |
+| 7 | PUT | `/api/roles/:id/permissions` | `ADMIN_MANAGE_PERMISSIONS` | `{ permissionNames: string[] }` | `updateRolePermissions` (`:63`) |
+| 8 | DELETE | `/api/roles/:id` | `ADMIN_MANAGE_ROLES` | param `id` | `remove` (`:72`) |
 
-> Thứ tự route: `permissions/available` khai báo trước `:id` (`roles.controller.ts:37,43`) để không bị route động nuốt.
+> Thứ tự route: `permissions/available` khai báo trước `:id` (`:37` vs `:43`) nên không bị nuốt bởi param `:id`.
 
-### 1. POST /api/roles — Tạo vai trò
-- **Permission**: `admin:manage_roles` (`roles.controller.ts:26`).
-- **Body** (`CreateRoleDto`, `dto/create-role.dto.ts`):
-```json
-{
-  "name": "STAFF_SALES",
-  "description": "Nhân viên bán hàng",
-  "permissionNames": ["products:read", "orders:create"]
-}
+## 3. Chuỗi gọi controller → service → repository
+
 ```
-- **Validation**: `name` bắt buộc, trim, ≤50 ký tự; `description` bắt buộc, ≤255; `permissionNames` tuỳ chọn, mảng string.
-- **Logic** (`roles.service.ts:14-36`):
-  1. Tạo `Role` (tách `permissionNames` ra khỏi `roleData`).
-  2. Nếu có `permissionNames` → gọi `assignPermissionsToRole`.
-  3. Trả về `findOne(role.id)` (kèm permissions).
-  - Lỗi Prisma `P2002` (trùng unique) → `ConflictException('Role name already exists')`.
+RolesController.create        → RolesService.create        → prisma.role.create → assignPermissionsToRole → prisma.permission.findMany + rolePermission.createMany → findOne
+RolesController.findAll       → RolesService.findAll        → prisma.role.findMany (_count.users)
+RolesController.getAllPermissions   → RolesService.getAllPermissions   → prisma.permission.findMany
+RolesController.findOne       → RolesService.findOne        → prisma.role.findUnique (include permissions.permission)
+RolesController.getRolePermissions  → RolesService.getRolePermissions  → prisma.role.findUnique (include permissions.permission)
+RolesController.update        → RolesService.update         → prisma.role.update + rolePermission.deleteMany + assignPermissionsToRole → findOne
+RolesController.updateRolePermissions → RolesService.updateRolePermissions → findOne + rolePermission.deleteMany + assignPermissionsToRole → findOne
+RolesController.remove        → RolesService.remove         → prisma.user.count + role.update (set deletedAt)
+```
 
-### 2. GET /api/roles — Danh sách vai trò
-- **Permission**: `admin:manage_roles`.
-- **Logic**: trả các role `deletedAt: null`, kèm `_count.users` (số user của role) (`roles.service.ts:38-49`).
+Helper private `assignPermissionsToRole` (`roles.service.ts:145`) được dùng lại bởi `create`, `update`, `updateRolePermissions` — là điểm trung tâm việc gán permission.
 
-### 3. GET /api/roles/permissions/available — Tất cả quyền khả dụng
-- **Permission**: `admin:manage_permissions`.
-- **Logic**: `permission.findMany` sắp xếp theo `resource` rồi `action` (`roles.service.ts:184-188`).
+## 4. Business Logic
 
-### 4. GET /api/roles/:id — Chi tiết vai trò
-- **Permission**: `admin:manage_roles`.
-- **Logic**: `role.findUnique` theo `id` + `deletedAt: null`, include permissions (qua `RolePermission` → `Permission`); không thấy → `NotFoundException` (`roles.service.ts:51-79`).
+- **create** (`roles.service.ts:14`): tách `permissionNames` khỏi `roleData`, tạo role rồi (nếu có) gán permission; bắt lỗi Prisma `P2002` → `ConflictException('Role name already exists')` (`:32`). Trả về `findOne(role.id)` (kèm permissions).
+- **findAll** (`:38`): chỉ lấy `deletedAt: null`, kèm `_count.users` (số user đang gán role).
+- **findOne** (`:51`): include `permissions.permission` (chọn `id,name,description,resource,action`); không thấy → `NotFoundException` (`:75`).
+- **update** (`:81`): cập nhật thông tin cơ bản; nếu `permissionNames !== undefined` → `rolePermission.deleteMany` xóa hết rồi gán lại (replace, không merge) (`:92-102`). Lỗi `P2002` → `ConflictException`.
+- **remove** (`:114`): đếm user còn active gán role (`:116`); nếu `> 0` → `ConflictException('Cannot delete role. N user(s)...')` (`:124`). Nếu không có user → **soft-delete** set `deletedAt: new Date()` (`:130-141`).
+- **assignPermissionsToRole** (`:145`, private): lấy permission theo tên; nếu thiếu tên nào → `NotFoundException('The following permissions do not exist: ...')` (`:165`); rồi `rolePermission.createMany` (`:178`).
+- **getAllPermissions** (`:184`): trả tất cả permission, sort theo `resource` rồi `action`.
+- **getRolePermissions** (`:191`): trả mảng `permission` (đã flatten từ `permissions.map(rp => rp.permission)`); role không tồn tại → `NotFoundException` (`:203`).
+- **updateRolePermissions** (`:211`): `findOne` để verify tồn tại → xóa hết rolePermission → gán lại → trả `findOne`.
 
-### 5. GET /api/roles/:id/permissions — Quyền của 1 vai trò
-- **Permission**: `admin:manage_roles`.
-- **Logic**: `role.findUnique` include permissions, trả mảng `permission` đã map phẳng; không thấy role → `NotFoundException` (`roles.service.ts:191-208`).
+> Điểm cần human-review: `update` (`:81`) và `remove` (`:114`) gọi `role.update({ where: { id } })` không lọc `deletedAt`, có thể tác động lên role đã soft-deleted; cần kiểm tra mong muốn.
 
-### 6. PATCH /api/roles/:id — Cập nhật vai trò
-- **Permission**: `admin:manage_roles`.
-- **Body** (`UpdateRoleDto` = `PartialType(CreateRoleDto)` + `permissionNames` tuỳ chọn).
-- **Logic** (`roles.service.ts:81-112`):
-  1. Cập nhật thông tin cơ bản (`name`, `description`).
-  2. Nếu `permissionNames !== undefined`: xoá toàn bộ `rolePermission` của role rồi gán lại danh sách mới (nếu mảng > 0).
-  3. Trả `findOne(id)`.
-  - `P2002` → `ConflictException('Role name already exists')`.
+## 5. Tương tác Database (Prisma)
 
-### 7. PUT /api/roles/:id/permissions — Cập nhật riêng danh sách quyền
-- **Permission**: `admin:manage_permissions`.
-- **Body**: `{ "permissionNames": ["products:read", "products:update"] }` (`roles.controller.ts:61-68`).
-- **Logic** (`roles.service.ts:211-226`): kiểm tra role tồn tại (`findOne`) → xoá hết `rolePermission` cũ → gán lại danh sách mới → trả `findOne(roleId)`.
+| Model | Thao tác | Vị trí (roles.service.ts) |
+|-------|----------|---------------------------|
+| `role` | create, findMany, findUnique, update | `:19,39,52,86,130,192` |
+| `rolePermission` | deleteMany, createMany | `:94,178,216` |
+| `permission` | findMany | `:150,185` |
+| `user` | count (kiểm tra ràng buộc trước khi xóa role) | `:116` |
 
-### 8. DELETE /api/roles/:id — Xoá mềm vai trò
-- **Permission**: `admin:manage_roles`.
-- **Logic** (`roles.service.ts:114-142`):
-  - Đếm user active (`roleId = id`, `deletedAt: null`); nếu > 0 → `ConflictException('Cannot delete role. N user(s) are still assigned...')`.
-  - Ngược lại set `deletedAt = now()` (soft delete), trả `{ id, name, description, deletedAt }`.
+Quan hệ many-to-many `Role ↔ Permission` đi qua bảng nối `rolePermission` (`roleId`, `permissionId`).
 
-## Business Logic (Quy tắc nghiệp vụ)
+## 6. Phạm vi ảnh hưởng (impact)
 
-- **RBAC qua bảng nối**: quan hệ Role ↔ Permission là many-to-many qua `RolePermission`. Gán quyền nhận **tên permission** (`permissionNames`), service tra `permissionId` từ tên.
-- **Gán quyền kiểu replace**: cả `update` và `updateRolePermissions` đều xoá sạch `rolePermission` cũ rồi tạo lại — không phải merge incremental.
-- **Validate permission tồn tại**: `assignPermissionsToRole` so khớp danh sách yêu cầu với DB; nếu có tên không tồn tại → `NotFoundException('The following permissions do not exist: ...')` (`roles.service.ts:145-181`).
-- **Soft delete + ràng buộc**: không cho xoá role còn user đang gán — bảo vệ toàn vẹn tham chiếu trước khi soft delete.
-- **Tên role là unique**: trùng tên bị bắt qua mã lỗi Prisma `P2002` → `ConflictException`.
+`codegraph_impact` / `codegraph_explore` cho thấy cụm `roles` khá biệt lập, gói trong 2 file:
 
-## Database tương tác
+- **roles.controller.ts**: `RolesController:22`, `create:27`, `findAll:33`, `getAllPermissions:39`, `findOne:45`, `getRolePermissions:51`, `update:57`, `updateRolePermissions:63`, `remove:72`.
+- **roles.service.ts**: `RolesService:11`, `create:14`, `findAll:38`, `findOne:51`, `update:81`, `remove:114`, `assignPermissionsToRole:145`, `getAllPermissions:184`, `getRolePermissions:191`, `updateRolePermissions:211`.
 
-Xem Schema laptop-shop:
+Sửa `assignPermissionsToRole` ảnh hưởng tới 3 caller (`create`, `update`, `updateRolePermissions`). Vai trò liên quan trực tiếp tới gán role cho user — xem [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Người dùng]] (`UsersService.create` đọc role mặc định `CUSTOMER`).
 
-| Model | Table | Vai trò |
-|-------|-------|---------|
-| `Role` | `roles` | Vai trò (name unique, description, soft delete) |
-| `Permission` | `permissions` | Quyền (name, resource, action) |
-| `RolePermission` | `role_permissions` | Bảng nối Role ↔ Permission (unique `[roleId, permissionId]`, onDelete Cascade) |
-| `User` | `users` | Đếm user theo `roleId` khi xoá role |
+## 7. Liên kết
 
-Truy cập DB qua `PrismaService` (`src/database`). `PermissionGuard` (`src/auth/guards/permission.guard.ts`) cũng đọc các bảng này để kiểm tra quyền runtime — xem [[04_API_Specs/FEA_002_Phan_Quyen|Phân quyền (Permissions)]].
-
-## Cần human review
-
-- Permission constant (`src/auth/constants/permissions.constant.ts`) dùng định dạng `resource:action` (vd `products:read`); cần xác nhận seed data `permissions` khớp tập tên này, nếu không `assignPermissionsToRole` sẽ ném `NotFoundException`.
-- Xoá quyền theo kiểu replace có thể gây mất quyền tạm thời nếu xảy ra lỗi giữa bước delete và create (không nằm trong transaction).
+- [[04_API_Specs/FEA_006_Quan_Ly_Nguoi_Dung|Người dùng]]
+- [[03_Architecture/laptop-shop_Architecture|Kiến trúc BE]]
+- [[06_Code_Graph/laptop-shop/products/SKILL|Code Graph products]]

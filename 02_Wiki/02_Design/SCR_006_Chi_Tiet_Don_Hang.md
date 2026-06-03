@@ -3,74 +3,79 @@ title: "Chi tiết đơn hàng · SCR_006"
 type: screen-spec
 project: laptop-shop-angular
 source:
-  - "local: /Users/nhatnguyen/Documents/Github/code-demo/laptop-shop-angular/src/app/client/order/order-detail.component.ts"
+  - "local: src/app/client/order/order-detail.component.ts"
 status: draft
 last_synced: "2026-06-03"
-tags: [screen-spec, order, payment, client, laptop-shop-angular]
+tags:
+  - screen-spec
+  - laptop-shop-angular
+  - order
+  - checkout
+  - client
 ---
 
 # Chi tiết đơn hàng · SCR_006
 
-> Route: `order/:id` · Component: `src/app/client/order/order-detail.component.ts` · Guard: `authGuard` (lazy)
+## Tổng quan
 
-Liên quan: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]] · [[02_Design/SCR_005_Lich_Su_Don_Hang|Lịch sử đơn hàng]] · [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]] · [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc Frontend]]
+Màn hình hiển thị chi tiết một đơn hàng vừa tạo và cho phép người dùng **xác nhận đặt hàng** bằng cách chọn phương thức thanh toán + điền thông tin người nhận. Đây là bước checkout cuối cùng sau giỏ hàng.
 
-## 1. Tổng quan
+- Route: `order/:id`, lazy-loaded, được bảo vệ bởi `authGuard` (`src/app/app.routes.ts:33-36`).
+- Component standalone `OrderDetailComponent implements OnInit, OnDestroy` (`order-detail.component.ts:415`), dùng `ChangeDetectionStrategy.OnPush` + Angular Signals.
+- Có **đồng hồ đếm ngược 30 phút** kể từ `createdAt`; hết giờ thì tự điều hướng về trang chủ (`order-detail.component.ts:422`, `581-608`).
 
-Màn hình hiển thị chi tiết một đơn hàng và cho phép người dùng **xác nhận phương thức thanh toán + thông tin nhận hàng** trong một khung thời gian giới hạn (đếm ngược 30 phút). Đây là bước chốt đơn ngay sau khi tạo đơn từ giỏ hàng.
+## Thành phần UI
 
-- Route được khai báo tại `app.routes.ts:32-36`, lazy-loaded, bảo vệ bằng `authGuard` (`app.routes.ts:34`) — yêu cầu đăng nhập.
-- Component là standalone, `ChangeDetectionStrategy.OnPush`, dùng Angular signals (`order-detail.component.ts:57-60`, `415`).
-- Template inline (không có file `.html` riêng), gồm header/footer client dùng chung (`order-detail.component.ts:62`, `181`).
+- **Header/Footer client**: `ClientHeaderComponent`, `ClientFooterComponent` (import `order-detail.component.ts:7-8`).
+- **Timer box**: hiển thị `countdownText()` định dạng `mm:ss`; thêm class `expired` khi hết hạn (`order-detail.component.ts:521-528`).
+- **Danh sách sản phẩm trong đơn**: lặp `order().orderDetails`, mỗi item hiển thị ảnh (`getProductImage`), tên, số lượng, giá (`formatCurrency`) (`order-detail.component.ts:530-539`).
+- **Form người nhận**: input `receiverName`, `receiverAddress`, `receiverPhone`, `receiverMail` (`order-detail.component.ts:441-444`).
+- **Chọn phương thức thanh toán**: radio `COD` / `BANKING` → `selectedPaymentMethod` (`order-detail.component.ts:440`).
+- **Nút Xác nhận**: disabled theo `canConfirm()` và `isSubmitting()`.
+- **Success card**: hiển thị khi `isOrderSuccess()` = true (`order-detail.component.ts:365-394`, `427`).
 
-## 2. Thành phần UI chính
+## Luồng tương tác
 
-| Vùng | Mô tả | Vị trí |
-|---|---|---|
-| Header / Footer client | `app-client-header` (binding `user`, `cartCount`) + `app-client-footer` | `order-detail.component.ts:62,181` |
-| Trạng thái tải / lỗi / rỗng | Hộp "Đang tải…", lỗi, "Không tìm thấy đơn hàng" | `order-detail.component.ts:66-71` |
-| Thẻ thành công | Hiển thị sau khi xác nhận, có nút "Quay về trang chủ" | `order-detail.component.ts:72-78` |
-| Danh sách sản phẩm trong đơn | Lặp `order().orderDetails`, ảnh + tên + SL × giá + thành tiền | `order-detail.component.ts:86-102` |
-| Hộp đếm ngược | Thời gian xác nhận còn lại, đổi style khi `isExpired()` | `order-detail.component.ts:107-110` |
-| Form thanh toán & nhận hàng | Radio COD/BANKING, tên, SĐT, email, địa chỉ | `order-detail.component.ts:117-162` |
-| Nút "Xác nhận đặt hàng" | Disabled khi `!canConfirm()` hoặc đang submit | `order-detail.component.ts:164-170` |
+1. `ngOnInit` đọc `id` từ `paramMap`; nếu không hợp lệ → set lỗi "Mã đơn hàng không hợp lệ." (`order-detail.component.ts:448-457`).
+2. `loadOrder(id)` gọi `GET /products/order/:id`, chuẩn hóa response qua `normalizeOrderResponse`, đổ vào form và khởi động `startCountdown(createdAt)` (`order-detail.component.ts:546-578`).
+3. Người dùng điền form + chọn phương thức thanh toán. `canConfirm()` kiểm tra: chưa hết hạn, có phương thức, các trường không rỗng, email hợp lệ qua `isValidEmail` (`order-detail.component.ts:506-515`, `541-544`).
+4. `confirmOrder()` gọi `PATCH /products/order/:id/payment-method` với payload người nhận; thành công → dừng countdown, set `isOrderSuccess=true`, reset cart count về 0 (`order-detail.component.ts:464-504`).
+5. `ngOnDestroy` / hết giờ → `clearCountdown()` (`order-detail.component.ts:460-462`, `610-615`).
 
-## 3. Luồng tương tác
+## Service / API gọi tới
 
-1. **Khởi tạo** (`ngOnInit`, `:448-458`): lấy `id` từ route param; nếu không hợp lệ → set lỗi "Mã đơn hàng không hợp lệ." và dừng.
-2. **Tải đơn** (`loadOrder`, `:546-579`): GET đơn hàng, chuẩn hoá response (`normalizeOrderResponse`, `:617-627`), prefill form (tên/SĐT/email/địa chỉ; email fallback từ user đang đăng nhập, `:575`), khởi động đếm ngược từ `createdAt`.
-3. **Đếm ngược** (`startCountdown`, `:581-608`): hết hạn (30 phút kể từ `createdAt`, `:422`) → nếu chưa thành công thì điều hướng về `/` (`:601`). `createdAt` không hợp lệ cũng điều hướng về `/` (`:587`).
-4. **Điều chỉnh form**: chọn phương thức thanh toán, nhập thông tin; `canConfirm()` (`:506-515`) kiểm tra chưa hết hạn + đủ trường + email hợp lệ (`isValidEmail`, `:541-544`).
-5. **Xác nhận** (`confirmOrder`, `:464-504`): PATCH cập nhật phương thức thanh toán; thành công → dừng đếm ngược, hiện thẻ thành công, reset số lượng giỏ hàng về 0 (`authService.setCartCount(0)`, `:502`).
-6. **Hủy / dọn dẹp** (`ngOnDestroy`, `:460-462`): clear interval đếm ngược.
+Component không inject service domain riêng mà gọi `HttpClient` trực tiếp (`order-detail.component.ts:419`). Base URL: `http://localhost:8080/api/v1/products` (`order-detail.component.ts:421`).
 
-## 4. API / service gọi tới
-
-> Base: `productsApiUrl = 'http://localhost:8080/api/v1/products'` (`order-detail.component.ts:421`). Backend: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]].
-
-| Method | Endpoint | Mục đích | Vị trí |
+| Hành động | HTTP | Endpoint | file:line |
 |---|---|---|---|
-| GET | `/products/order/:orderId` | Tải chi tiết đơn hàng | `order-detail.component.ts:551` |
-| PATCH | `/products/order/:orderId/payment-method` | Xác nhận phương thức thanh toán + thông tin nhận hàng | `order-detail.component.ts:486` |
+| Tải chi tiết đơn | GET | `/products/order/:id` | `order-detail.component.ts:551` |
+| Xác nhận thanh toán | PATCH | `/products/order/:id/payment-method` | `order-detail.component.ts:486` |
 
-- HTTP gọi trực tiếp qua `HttpClient` inject (`:419`), không qua service riêng.
-- `AuthService` (`:416`) cung cấp `currentUser()`, `totalItemsInCart()` cho header và `setCartCount(0)` sau khi đặt hàng.
+### Component gọi service nào (từ codegraph_callees)
 
-## 5. State / dữ liệu
+`codegraph_callees(confirmOrder)` cho thấy `confirmOrder` gọi tới `AuthService.setCartCount` (`src/app/shared/services/auth.service.ts:146`) — sau khi đặt hàng thành công thì reset số lượng giỏ hàng về 0 (`order-detail.component.ts:502`). Ngoài ra gọi nội bộ `canConfirm`, `clearCountdown` và truy cập signal `_order`, `_isSubmitting`.
 
-Signals nội bộ (`order-detail.component.ts:424-438`):
+- `AuthService` được inject public (`order-detail.component.ts:416`), dùng `currentUser()` để prefill email người nhận (`order-detail.component.ts:575`) và `setCartCount(0)` (`auth.service.ts:146`).
 
-| Signal | Kiểu | Ý nghĩa |
-|---|---|---|
-| `order` | `OrderDetail \| null` | Đơn hàng đang xem |
-| `isLoading` | `boolean` | Đang tải |
-| `isSubmitting` | `boolean` | Đang gửi xác nhận |
-| `isOrderSuccess` | `boolean` | Đã xác nhận thành công |
-| `errorMessage` / `actionMessage` | `string` | Thông báo lỗi tải / kết quả thao tác |
-| `remainingSeconds` | `number` | Giây còn lại của đếm ngược |
+## State
 
-Trường form (two-way `ngModel`, `:440-444`): `selectedPaymentMethod` (`'COD' \| 'BANKING' \| ''`), `receiverName`, `receiverAddress`, `receiverPhone`, `receiverMail`.
+Toàn bộ state cục bộ qua Angular Signals (`order-detail.component.ts:424-446`):
 
-Kiểu dữ liệu chính: `OrderDetail`, `OrderDetailItem`, `OrderProduct`, `UpdatePaymentPayload` định nghĩa nội bộ component (`:11-55`).
+| Signal | Ý nghĩa |
+|---|---|
+| `order` | Dữ liệu `OrderDetail` đã tải |
+| `isLoading` | Đang tải chi tiết đơn |
+| `isSubmitting` | Đang gửi xác nhận |
+| `isOrderSuccess` | Đặt hàng thành công |
+| `errorMessage` / `actionMessage` | Thông báo lỗi / hành động |
+| `remainingSeconds` | Giây còn lại của countdown |
+| `selectedPaymentMethod`, `receiver*` | Trường form (plain property) |
 
-> ⚠️ Cần human review: thời lượng hết hạn 30 phút (`expiryDurationMs`, `:422`) được hard-code ở FE — cần xác nhận khớp với backend.
+Cart count là state toàn cục qua NgRx (selector `selectTotalItemsInCart` trong `AuthService`, `auth.service.ts:63`).
+
+## Liên kết
+
+- Feature BE: [[04_API_Specs/FEA_004_San_Pham_Gio_Hang_Don_Hang|Sản phẩm & Đơn hàng]]
+- Màn hình liên quan: [[02_Design/SCR_005_Lich_Su_Don_Hang|Lịch sử đơn hàng]], [[02_Design/SCR_003_Gio_Hang|Giỏ hàng]]
+- Kiến trúc: [[03_Architecture/laptop-shop-angular_Architecture|Kiến trúc FE]]
+- Code graph: [[06_Code_Graph/laptop-shop-angular/admin/SKILL|Code Graph admin]]
