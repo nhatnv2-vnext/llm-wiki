@@ -21,7 +21,8 @@
 
 set -euo pipefail
 
-VAULT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# Script ở apps/System/agent_skills -> lên 3 cấp tới gốc vault.
+VAULT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 PROJECTS_JSON="$VAULT_ROOT/01_Raw/codebase/projects.json"
 WIKI_OUT="$VAULT_ROOT/02_Wiki/06_Code_Graph"
 
