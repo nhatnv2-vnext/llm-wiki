@@ -66,6 +66,14 @@ export default function SidebarContent({
           LLM Wiki
         </span>
       </Link>
+      <Link
+        href="/graph"
+        onClick={onNavigate}
+        className="mb-2 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent-soft hover:text-accent-hover"
+      >
+        <span aria-hidden>🕸️</span>
+        Đồ thị wiki
+      </Link>
       <TreeItems nodes={tree} onNavigate={onNavigate} />
     </nav>
   );
