@@ -81,15 +81,19 @@ async function scanDir(absDir: string): Promise<WikiNode[]> {
 }
 
 // --- Cache cây thư mục trong memory -----------------------------------------
+// Chỉ cache ở production. Ở dev, vault là dữ liệu sống (thêm/sửa .md liên tục)
+// nên luôn quét lại đĩa để file mới hiện ngay mà không phải restart server.
+
+const CACHE_ENABLED = process.env.NODE_ENV === "production";
 
 let treeCache: WikiNode[] | null = null;
 
 /**
  * Quét toàn bộ cây thư mục wiki và trả về cấu trúc lồng nhau.
- * Kết quả được cache trong memory; gọi invalidateWikiTree() để làm mới.
+ * Kết quả được cache trong memory (chỉ ở production).
  */
 export async function getWikiTree(): Promise<WikiNode[]> {
-  if (treeCache) return treeCache;
+  if (CACHE_ENABLED && treeCache) return treeCache;
   treeCache = await scanDir(WIKI_ROOT_PATH);
   return treeCache;
 }
@@ -136,7 +140,7 @@ let linkIndexCache: Map<string, string> | null = null;
  * từ nguồn ưu tiên cao hơn).
  */
 export async function getWikiLinkIndex(): Promise<Map<string, string>> {
-  if (linkIndexCache) return linkIndexCache;
+  if (CACHE_ENABLED && linkIndexCache) return linkIndexCache;
 
   const tree = await getWikiTree();
   const files = flattenFiles(tree);
