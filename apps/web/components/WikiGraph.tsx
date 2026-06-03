@@ -15,9 +15,24 @@ type ForceNode = {
   id: string;
   name: string;
   val: number;
+  headings: number;
   x?: number;
   y?: number;
 };
+
+/**
+ * Thang màu theo số heading: ít -> nhạt (be), nhiều -> đậm (terracotta).
+ * Nội suy tuyến tính giữa 2 màu theo tỉ lệ headings / max.
+ */
+const COLOR_LOW = [214, 199, 181]; // #d6c7b5 be nhạt (file ít heading)
+const COLOR_HIGH = [166, 60, 38]; // #a63c26 terracotta đậm (nhiều heading)
+
+function lerpColor(t: number): string {
+  const c = COLOR_LOW.map((lo, i) =>
+    Math.round(lo + (COLOR_HIGH[i] - lo) * t),
+  );
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
 
 export default function WikiGraph({ data }: { data: WikiGraphData }) {
   const router = useRouter();
@@ -52,6 +67,16 @@ export default function WikiGraph({ data }: { data: WikiGraphData }) {
     };
   }, []);
 
+  // Heading lớn nhất để chuẩn hoá thang màu (>=1 để tránh chia 0).
+  const maxHeadings = useMemo(
+    () => Math.max(1, ...data.nodes.map((n) => n.headings ?? 0)),
+    [data],
+  );
+  const colorOf = useCallback(
+    (node: ForceNode) => lerpColor(Math.min(1, (node.headings ?? 0) / maxHeadings)),
+    [maxHeadings],
+  );
+
   const handleClick = useCallback(
     (node: ForceNode) => {
       router.push(`/wiki/${node.id}`);
@@ -66,7 +91,7 @@ export default function WikiGraph({ data }: { data: WikiGraphData }) {
 
       ctx.beginPath();
       ctx.arc(node.x ?? 0, node.y ?? 0, r, 0, 2 * Math.PI);
-      ctx.fillStyle = colors.accent;
+      ctx.fillStyle = colorOf(node);
       ctx.fill();
       if (isHover) {
         ctx.lineWidth = 1.5 / scale;
@@ -84,7 +109,7 @@ export default function WikiGraph({ data }: { data: WikiGraphData }) {
         ctx.fillText(node.name, node.x ?? 0, (node.y ?? 0) + r + 1);
       }
     },
-    [colors, hoverId],
+    [colors, hoverId, colorOf],
   );
 
   return (
@@ -96,7 +121,7 @@ export default function WikiGraph({ data }: { data: WikiGraphData }) {
           height={size.height}
           backgroundColor="rgba(0,0,0,0)"
           nodeRelSize={4}
-          nodeColor={() => colors.accent}
+          nodeColor={(n) => colorOf(n as ForceNode)}
           linkColor={() => colors.muted}
           linkDirectionalParticles={0}
           linkWidth={1}
