@@ -19,7 +19,7 @@ export default async function GraphPage() {
           một node để mở.
         </p>
       </header>
-      <div className="relative flex-1">
+      <div className="bg-dotgrid relative flex-1">
         <WikiGraph data={data} />
       </div>
     </div>

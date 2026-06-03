@@ -80,3 +80,13 @@ body {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ===== Nền lưới chấm (dot grid) cho canvas đồ thị ===== */
+.bg-dotgrid {
+  background-image: radial-gradient(
+    var(--border) 1px,
+    transparent 1px
+  );
+  background-size: 18px 18px;
+  background-position: -9px -9px;
+}
