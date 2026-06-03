@@ -11,5 +11,110 @@
     "status": "draft | reviewed | stale",
     "last_synced": "YYYY-MM-DD hoặc null"
   },
-  "features": []
+  "features": [
+    {
+      "id": "FEA_001",
+      "name": "Xác thực & Phiên đăng nhập",
+      "project": "laptop-shop",
+      "controller_or_entry": "src/auth/auth.controller.ts",
+      "api_endpoints": [
+        "POST /api/auth/login",
+        "POST /api/auth/register",
+        "POST /api/auth/refresh",
+        "POST /api/auth/logout"
+      ],
+      "related_db_schemas": [],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "FEA_002",
+      "name": "Phân quyền (Permissions)",
+      "project": "laptop-shop",
+      "controller_or_entry": "src/auth/controllers/permission.controller.ts",
+      "api_endpoints": [
+        "GET /api/auth/permissions",
+        "GET /api/auth/permissions/my-permissions",
+        "GET /api/auth/permissions/roles"
+      ],
+      "related_db_schemas": [],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "FEA_003",
+      "name": "Cronjob & Hàng đợi email",
+      "project": "laptop-shop",
+      "controller_or_entry": "src/cronjob/controllers/cronjob.controller.ts",
+      "api_endpoints": [
+        "GET /api/cronjob/status",
+        "GET /api/cronjob/email-queue/status",
+        "GET /api/cronjob/logs"
+      ],
+      "related_db_schemas": [],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "FEA_004",
+      "name": "Sản phẩm, Giỏ hàng & Đơn hàng",
+      "project": "laptop-shop",
+      "controller_or_entry": "src/products/products.controller.ts",
+      "api_endpoints": [
+        "POST /api/products",
+        "GET /api/products",
+        "GET /api/products/cart",
+        "GET /api/products/orders-history",
+        "GET /api/products/:id",
+        "PATCH /api/products/:id",
+        "DELETE /api/products/:id",
+        "POST /api/products/:id/add-to-cart",
+        "POST /api/products/delete-product-in-cart/:id",
+        "POST /api/products/update-cart-before-checkout",
+        "POST /api/products/place-order",
+        "GET /api/products/order/:id",
+        "PATCH /api/products/order/:id/payment-method"
+      ],
+      "related_db_schemas": [],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "FEA_005",
+      "name": "Quản lý Vai trò (Roles)",
+      "project": "laptop-shop",
+      "controller_or_entry": "src/roles/roles.controller.ts",
+      "api_endpoints": [
+        "POST /api/roles",
+        "GET /api/roles",
+        "GET /api/roles/permissions/available",
+        "GET /api/roles/:id",
+        "GET /api/roles/:id/permissions",
+        "PATCH /api/roles/:id",
+        "PUT /api/roles/:id/permissions",
+        "DELETE /api/roles/:id"
+      ],
+      "related_db_schemas": [],
+      "status": "draft",
+      "last_synced": null
+    },
+    {
+      "id": "FEA_006",
+      "name": "Quản lý Người dùng",
+      "project": "laptop-shop",
+      "controller_or_entry": "src/users/users.controller.ts",
+      "api_endpoints": [
+        "POST /api/users",
+        "GET /api/users",
+        "GET /api/users/me",
+        "GET /api/users/:id",
+        "PUT /api/users/:id",
+        "PUT /api/users/:id/change-password",
+        "DELETE /api/users/:id"
+      ],
+      "related_db_schemas": [],
+      "status": "draft",
+      "last_synced": null
+    }
+  ]
 }
