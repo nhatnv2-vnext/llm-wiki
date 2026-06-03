@@ -14,7 +14,10 @@ function TreeItems({
       {nodes.map((node) =>
         node.type === "dir" ? (
           <li key={node.slug}>
-            <span className="mt-3 block px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted">
+            <span
+              title={node.name}
+              className="mt-3 block truncate px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted"
+            >
               {node.name}
             </span>
             {node.children && node.children.length > 0 && (
@@ -28,7 +31,8 @@ function TreeItems({
             <Link
               href={`/wiki/${node.slug}`}
               onClick={onNavigate}
-              className="block rounded-lg px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent-soft hover:text-accent-hover"
+              title={node.name}
+              className="block truncate rounded-lg px-2.5 py-1.5 text-sm text-foreground/80 transition-colors hover:bg-accent-soft hover:text-accent-hover"
             >
               {node.name}
             </Link>
@@ -52,7 +56,7 @@ export default function SidebarContent({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="h-full overflow-y-auto bg-surface-muted p-3">
+    <nav className="h-full overflow-y-auto overflow-x-hidden bg-surface-muted p-3">
       <Link
         href="/"
         onClick={onNavigate}

@@ -19,6 +19,47 @@ export default function AppShell({
 }) {
   const [open, setOpen] = useState(false);
 
+  // --- Resize sidebar desktop ---
+  const MIN_W = 200;
+  const MAX_W = 480;
+  const DEFAULT_W = 256;
+  // Đọc width đã lưu ngay khi khởi tạo (React-recommended cho giá trị từ
+  // localStorage). SSR dùng DEFAULT_W; <aside> có suppressHydrationWarning vì
+  // chỉ style.width có thể khác ở lần paint đầu trên client.
+  const [width, setWidth] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_W;
+    const saved = Number(window.localStorage.getItem("sidebarWidth"));
+    return saved >= MIN_W && saved <= MAX_W ? saved : DEFAULT_W;
+  });
+  const [resizing, setResizing] = useState(false);
+
+  // Kéo để resize: nghe mousemove/up ở document khi đang kéo.
+  useEffect(() => {
+    if (!resizing) return;
+    const onMove = (e: MouseEvent) => {
+      const w = Math.min(MAX_W, Math.max(MIN_W, e.clientX));
+      setWidth(w);
+    };
+    const onUp = () => {
+      setResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [resizing]);
+
+  // Lưu width khi ngừng kéo.
+  useEffect(() => {
+    if (!resizing) localStorage.setItem("sidebarWidth", String(width));
+  }, [resizing, width]);
+
   // Khoá scroll body khi drawer mở; đóng bằng phím Esc.
   useEffect(() => {
     if (!open) return;
@@ -71,9 +112,31 @@ export default function AppShell({
         </span>
       </header>
 
-      {/* Sidebar desktop — cố định, ẩn trên mobile */}
-      <aside className="hidden w-64 shrink-0 border-r border-border md:block">
+      {/* Sidebar desktop — co kéo được, ẩn trên mobile */}
+      <aside
+        suppressHydrationWarning
+        style={{ width }}
+        className="group relative hidden shrink-0 border-r border-border md:block"
+      >
         <SidebarContent tree={tree} />
+
+        {/* Handle kéo ở mép phải: vùng bắt rộng, vạch hiện khi hover/đang kéo */}
+        <div
+          onMouseDown={() => setResizing(true)}
+          onDoubleClick={() => setWidth(DEFAULT_W)}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Kéo để đổi kích thước sidebar (bấm đúp để đặt lại)"
+          className="absolute inset-y-0 -right-1 z-10 flex w-2 cursor-col-resize items-center justify-center"
+        >
+          <span
+            className={`h-full w-px transition-colors ${
+              resizing
+                ? "bg-accent"
+                : "bg-transparent group-hover:bg-accent/50"
+            }`}
+          />
+        </div>
       </aside>
 
       {/* Drawer mobile + overlay */}
