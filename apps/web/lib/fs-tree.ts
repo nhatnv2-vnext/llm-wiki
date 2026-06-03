@@ -97,6 +97,86 @@ export async function getWikiTree(): Promise<WikiNode[]> {
 /** Xoá cache cây thư mục (vd khi file thay đổi). */
 export function invalidateWikiTree(): void {
   treeCache = null;
+  linkIndexCache = null;
+}
+
+// --- Index title/tên -> slug (để resolve wikilink) --------------------------
+
+/** Làm phẳng cây, trả về danh sách node là file. */
+function flattenFiles(nodes: WikiNode[]): WikiNode[] {
+  const out: WikiNode[] = [];
+  for (const n of nodes) {
+    if (n.type === "file") out.push(n);
+    else if (n.children) out.push(...flattenFiles(n.children));
+  }
+  return out;
+}
+
+/** Lấy `title` trong front-matter YAML (nếu có) của nội dung .md. */
+function extractFrontmatterTitle(content: string): string | null {
+  const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return null;
+  const titleLine = m[1].match(/^title:\s*(.+)$/m);
+  if (!titleLine) return null;
+  return titleLine[1].trim().replace(/^["']|["']$/g, "") || null;
+}
+
+/** Tên cuối của slug (basename), vd "01_Business/checkout" -> "checkout". */
+function basenameOfSlug(slug: string): string {
+  const i = slug.lastIndexOf("/");
+  return i === -1 ? slug : slug.slice(i + 1);
+}
+
+let linkIndexCache: Map<string, string> | null = null;
+
+/**
+ * Map khoá-tra-cứu (đã lowercase) -> slug, để resolve wikilink `[[...]]`.
+ * Mỗi file được index theo: slug đầy đủ, basename, và title front-matter.
+ * Khoá trùng: ưu tiên slug đầy đủ > title > basename (không ghi đè khoá đã có
+ * từ nguồn ưu tiên cao hơn).
+ */
+export async function getWikiLinkIndex(): Promise<Map<string, string>> {
+  if (linkIndexCache) return linkIndexCache;
+
+  const tree = await getWikiTree();
+  const files = flattenFiles(tree);
+  const index = new Map<string, string>();
+  const add = (key: string, slug: string) => {
+    const k = key.toLowerCase();
+    if (!index.has(k)) index.set(k, slug);
+  };
+
+  // Pass 1: slug đầy đủ (ưu tiên cao nhất).
+  for (const f of files) add(f.slug, f.slug);
+
+  // Pass 2: title front-matter.
+  for (const f of files) {
+    const content = await getFileContent(f.slug);
+    const title = content ? extractFrontmatterTitle(content) : null;
+    if (title) add(title, f.slug);
+  }
+
+  // Pass 3: basename (ưu tiên thấp nhất, dễ trùng).
+  for (const f of files) add(basenameOfSlug(f.slug), f.slug);
+
+  linkIndexCache = index;
+  return index;
+}
+
+/**
+ * Resolve một target wikilink (phần trước dấu `|`) thành slug.
+ * Thử: khoá nguyên văn -> bỏ đuôi .md -> slugify cơ bản. Trả null nếu không có.
+ */
+export function resolveWikiLink(
+  target: string,
+  index: Map<string, string>,
+): string | null {
+  const cleaned = target.trim().replace(/\.md$/i, "");
+  const direct = index.get(cleaned.toLowerCase());
+  if (direct) return direct;
+  // fallback: lấy basename của target (vd "Folder/Name" -> "Name").
+  const base = basenameOfSlug(cleaned);
+  return index.get(base.toLowerCase()) ?? null;
 }
 
 // --- Đọc nội dung file (chống path traversal) -------------------------------

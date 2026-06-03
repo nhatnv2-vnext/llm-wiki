@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* ===== Anthropic theme (theo Streamlit advanced-theming-anthropic) =====
    Light theme: nền kem #f4f3ed, accent nâu-terracotta #bb5a38,
