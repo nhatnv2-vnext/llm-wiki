@@ -89,7 +89,7 @@ erDiagram
     }
     CARTS {
         int id PK
-        int userId FK_UK
+        int userId FK "unique - giỏ 1-1 user"
         int sum
     }
     CART_DETAIL {
