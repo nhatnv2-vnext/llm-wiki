@@ -141,7 +141,7 @@ export default function AppShell({
           type="button"
           onClick={toggleCollapsed}
           aria-label="Thu gọn sidebar"
-          className="absolute right-2 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted opacity-0 transition-opacity hover:bg-accent-soft hover:text-accent-hover group-hover:opacity-100"
+          className="absolute right-2 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-accent-soft hover:text-accent-hover"
         >
           {/* icon panel-collapse-left */}
           <svg
