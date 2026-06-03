@@ -33,6 +33,20 @@ export default function AppShell({
   });
   const [resizing, setResizing] = useState(false);
 
+  // --- Collapse sidebar desktop (đóng/mở hẳn) ---
+  // Đọc từ localStorage khi khởi tạo; các phần phụ thuộc collapsed đều
+  // suppressHydrationWarning hoặc luôn render (chỉ đổi class) để tránh mismatch.
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("sidebarCollapsed") === "1";
+  });
+  const toggleCollapsed = () =>
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem("sidebarCollapsed", next ? "1" : "0");
+      return next;
+    });
+
   // Kéo để resize: nghe mousemove/up ở document khi đang kéo.
   useEffect(() => {
     if (!resizing) return;
@@ -75,7 +89,7 @@ export default function AppShell({
   }, [open]);
 
   return (
-    <div className="flex h-screen flex-col md:flex-row">
+    <div className="relative flex h-screen flex-col md:flex-row">
       {/* Top bar — chỉ hiện trên mobile */}
       <header className="flex items-center gap-3 border-b border-border bg-surface-muted px-4 py-3 md:hidden">
         <button
@@ -112,32 +126,90 @@ export default function AppShell({
         </span>
       </header>
 
-      {/* Sidebar desktop — co kéo được, ẩn trên mobile */}
+      {/* Sidebar desktop — co kéo được + đóng/mở được, ẩn trên mobile */}
       <aside
         suppressHydrationWarning
-        style={{ width }}
-        className="group relative hidden shrink-0 border-r border-border md:block"
+        style={{ width: collapsed ? 0 : width }}
+        className={`group relative hidden shrink-0 md:block ${
+          collapsed ? "overflow-hidden border-r-0" : "border-r border-border"
+        }`}
       >
         <SidebarContent tree={tree} />
 
-        {/* Handle kéo ở mép phải: vùng bắt rộng, vạch hiện khi hover/đang kéo */}
-        <div
-          onMouseDown={() => setResizing(true)}
-          onDoubleClick={() => setWidth(DEFAULT_W)}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Kéo để đổi kích thước sidebar (bấm đúp để đặt lại)"
-          className="absolute inset-y-0 -right-1 z-10 flex w-2 cursor-col-resize items-center justify-center"
+        {/* Nút collapse — nổi góc phải-trên sidebar, hiện khi hover */}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label="Thu gọn sidebar"
+          className="absolute right-2 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted opacity-0 transition-opacity hover:bg-accent-soft hover:text-accent-hover group-hover:opacity-100"
         >
-          <span
-            className={`h-full w-px transition-colors ${
-              resizing
-                ? "bg-accent"
-                : "bg-transparent group-hover:bg-accent/50"
-            }`}
-          />
-        </div>
+          {/* icon panel-collapse-left */}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <line x1="9" y1="4" x2="9" y2="20" />
+            <path d="M15 9l-2 3 2 3" />
+          </svg>
+        </button>
+
+        {/* Handle kéo ở mép phải (ẩn khi đã collapse) */}
+        {!collapsed && (
+          <div
+            onMouseDown={() => setResizing(true)}
+            onDoubleClick={() => setWidth(DEFAULT_W)}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Kéo để đổi kích thước sidebar (bấm đúp để đặt lại)"
+            className="absolute inset-y-0 -right-1 z-10 flex w-2 cursor-col-resize items-center justify-center"
+          >
+            <span
+              className={`h-full w-px transition-colors ${
+                resizing
+                  ? "bg-accent"
+                  : "bg-transparent group-hover:bg-accent/50"
+              }`}
+            />
+          </div>
+        )}
       </aside>
+
+      {/* Nút mở lại sidebar — luôn render (đổi class) để tránh hydration mismatch;
+          chỉ hiện trên desktop khi đã collapse. */}
+      <button
+        type="button"
+        suppressHydrationWarning
+        onClick={toggleCollapsed}
+        aria-label="Mở sidebar"
+        className={`absolute left-2 top-2.5 z-30 h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-muted text-muted shadow-sm transition-colors hover:bg-accent-soft hover:text-accent-hover ${
+          collapsed ? "hidden md:inline-flex" : "hidden"
+        }`}
+      >
+          {/* icon panel-expand */}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <line x1="9" y1="4" x2="9" y2="20" />
+            <path d="M13 9l2 3-2 3" />
+          </svg>
+        </button>
 
       {/* Drawer mobile + overlay */}
       {open && (
