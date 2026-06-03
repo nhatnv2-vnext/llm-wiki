@@ -32,3 +32,22 @@ function readWikiRootPath(): string {
 
 /** Đường dẫn tuyệt đối tới thư mục gốc của wiki (02_Wiki). */
 export const WIKI_ROOT_PATH = readWikiRootPath();
+
+/**
+ * Đường dẫn thư mục LanceDB (vector DB local).
+ * Lấy từ LANCEDB_PATH; mặc định `.lancedb/` trong thư mục chạy app.
+ */
+function readLanceDbPath(): string {
+  const raw = process.env.LANCEDB_PATH?.trim();
+  const base = raw && raw !== "" ? raw : ".lancedb";
+  return path.resolve(base);
+}
+
+/** Đường dẫn tuyệt đối tới thư mục LanceDB. */
+export const LANCEDB_PATH = readLanceDbPath();
+
+/** Tên bảng chunks dùng cho RAG. */
+export const WIKI_CHUNKS_TABLE = "wiki_chunks";
+
+/** Số chiều vector — khớp model embedding text-embedding-004 của Google. */
+export const EMBEDDING_DIM = 768;
