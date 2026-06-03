@@ -13,7 +13,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const VAULT_ROOT = path.resolve(__dirname, '..', '..');
+// __dirname = apps/System/agent_skills -> lên 3 cấp tới gốc vault
+// (sau khi System được gom vào apps/ trong monorepo).
+const VAULT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const WIKI = path.join(VAULT_ROOT, '02_Wiki');
 
 const SKIP_DIRS = ['_Templates', '06_Code_Graph', '_Archive'];
