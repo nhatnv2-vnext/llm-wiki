@@ -47,11 +47,6 @@ tags:
 ---
 ```
 
-## 📑 Tài liệu nghiệp vụ đã có
-- [[01_Business/Dat_Hang|Đặt hàng (Checkout)]] — Luồng giỏ hàng → đặt đơn → thanh toán, chống oversell.
-- [[01_Business/Xac_Thuc_Dang_Ky|Xác thực & Đăng ký]] — Đăng nhập, đăng ký, refresh/logout token.
-- [[01_Business/Phan_Quyen_RBAC|Phân quyền RBAC]] — Cơ chế role/permission, guard kiểm soát truy cập.
-
 ## 🔗 Liên kết Hữu ích
 - [[Index]] — Quay lại Trang chủ chính.
 - [[02_Design/README|Đặc tả Giao diện]] — Các màn hình giao diện cụ thể để hiện thực hóa nghiệp vụ này.
