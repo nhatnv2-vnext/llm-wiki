@@ -86,13 +86,38 @@ export default function WikiGraph({ data }: { data: WikiGraphData }) {
 
   const paintNode = useCallback(
     (node: ForceNode, ctx: CanvasRenderingContext2D, scale: number) => {
-      const r = Math.max(2, Math.sqrt(node.val) * 2);
+      const t = Date.now() / 1000;
+      // Mỗi node nhịp đập lệch pha nhau dựa vào hash của id.
+      const phaseOffset =
+        (node.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 100) /
+        100;
+      const breathe = 1 + Math.sin(t * 1.4 + phaseOffset * Math.PI * 2) * 0.08;
+      const baseR = Math.max(2, Math.sqrt(node.val) * 2);
+      const r = baseR * breathe;
       const isHover = node.id === hoverId;
+      const cx = node.x ?? 0;
+      const cy = node.y ?? 0;
+      const nodeColor = colorOf(node);
 
+      // Vòng sáng mở rộng khi hover.
+      if (isHover) {
+        const pulse = Math.sin(t * 5) * 0.5 + 0.5; // 0→1
+        const glowR = r + pulse * r * 1.5;
+        ctx.save();
+        ctx.globalAlpha = 0.35 * pulse;
+        ctx.beginPath();
+        ctx.arc(cx, cy, glowR, 0, 2 * Math.PI);
+        ctx.fillStyle = nodeColor;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Node chính.
       ctx.beginPath();
-      ctx.arc(node.x ?? 0, node.y ?? 0, r, 0, 2 * Math.PI);
-      ctx.fillStyle = colorOf(node);
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.fillStyle = nodeColor;
       ctx.fill();
+
       if (isHover) {
         ctx.lineWidth = 1.5 / scale;
         ctx.strokeStyle = colors.text;
@@ -106,7 +131,7 @@ export default function WikiGraph({ data }: { data: WikiGraphData }) {
         ctx.fillStyle = colors.text;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillText(node.name, node.x ?? 0, (node.y ?? 0) + r + 1);
+        ctx.fillText(node.name, cx, cy + r + 1);
       }
     },
     [colors, hoverId, colorOf],
@@ -123,7 +148,10 @@ export default function WikiGraph({ data }: { data: WikiGraphData }) {
           nodeRelSize={4}
           nodeColor={(n) => colorOf(n as ForceNode)}
           linkColor={() => colors.muted}
-          linkDirectionalParticles={0}
+          linkDirectionalParticles={2}
+          linkDirectionalParticleSpeed={0.003}
+          linkDirectionalParticleWidth={1.5}
+          linkDirectionalParticleColor={() => colors.accent}
           linkWidth={1}
           onNodeClick={(n) => handleClick(n as ForceNode)}
           onNodeHover={(n) => setHoverId((n as ForceNode | null)?.id ?? null)}

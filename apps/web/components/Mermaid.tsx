@@ -20,7 +20,28 @@ export default function Mermaid({ chart }: { chart: string }) {
     (async () => {
       try {
         const mermaid = (await import("mermaid")).default;
-        mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "strict",
+          theme: isDark ? "dark" : "neutral",
+          themeVariables: isDark
+            ? {
+                primaryTextColor: "#eceae1",
+                lineColor: "#a8a290",
+                textColor: "#eceae1",
+                labelTextColor: "#eceae1",
+                noteBkgColor: "#2b2a25",
+                noteTextColor: "#eceae1",
+                activationBorderColor: "#cd7a5a",
+              }
+            : {
+                primaryTextColor: "#1a1a18",
+                lineColor: "#6b6759",
+                textColor: "#1a1a18",
+                labelTextColor: "#1a1a18",
+              },
+        });
         const res = await mermaid.render(id, chart);
         if (!cancelled) {
           setSvg(res.svg);

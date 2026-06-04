@@ -19,13 +19,17 @@ export type WikiNode = {
 /** Thư mục bị bỏ qua khi quét cây. */
 const IGNORED_DIRS = new Set(["_Archive", "_Templates"]);
 
+/** File bị bỏ qua khi quét cây (skill/codegraph, không phải tài liệu wiki). */
+const IGNORED_FILES = new Set(["SKILL.md"]);
+
 /** Chỉ phục vụ file có đuôi này. */
 const MARKDOWN_EXT = ".md";
 
-/** Bỏ qua file/thư mục ẩn (bắt đầu bằng dấu chấm) và các thư mục cấm. */
+/** Bỏ qua file/thư mục ẩn (bắt đầu bằng dấu chấm) và các mục cấm. */
 function isIgnored(entryName: string, isDir: boolean): boolean {
   if (entryName.startsWith(".")) return true;
   if (isDir && IGNORED_DIRS.has(entryName)) return true;
+  if (!isDir && IGNORED_FILES.has(entryName)) return true;
   return false;
 }
 
@@ -94,7 +98,12 @@ let treeCache: WikiNode[] | null = null;
  */
 export async function getWikiTree(): Promise<WikiNode[]> {
   if (CACHE_ENABLED && treeCache) return treeCache;
-  treeCache = await scanDir(WIKI_ROOT_PATH);
+  try {
+    treeCache = await scanDir(WIKI_ROOT_PATH);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw err;
+  }
   return treeCache;
 }
 

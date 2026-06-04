@@ -1,0 +1,26 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - WIKI_ROOT_PATH=/wiki
+      - LANCEDB_PATH=/data/lancedb
+    volumes:
+      # 02_Wiki mount read-only — app chỉ đọc, không ghi.
+      - ./02_Wiki:/wiki:ro
+      # LanceDB data persist giữa các lần restart.
+      - lancedb_data:/data/lancedb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  lancedb_data:
