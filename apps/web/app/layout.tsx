@@ -34,7 +34,12 @@ export default async function RootLayout({
       lang="vi"
       className={`${spaceGrotesk.variable} ${spaceMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">
+      {/* suppressHydrationWarning: bỏ qua mismatch do extension trình duyệt
+          (vd Grammarly chèn data-gr-* vào <body>) — chỉ ở attribute của thẻ này. */}
+      <body
+        className="min-h-full bg-background text-foreground"
+        suppressHydrationWarning
+      >
         <AppShell tree={tree}>{children}</AppShell>
       </body>
     </html>

@@ -19,13 +19,17 @@ export type WikiNode = {
 /** Thư mục bị bỏ qua khi quét cây. */
 const IGNORED_DIRS = new Set(["_Archive", "_Templates"]);
 
+/** File bị bỏ qua khi quét cây (skill/codegraph, không phải tài liệu wiki). */
+const IGNORED_FILES = new Set(["SKILL.md"]);
+
 /** Chỉ phục vụ file có đuôi này. */
 const MARKDOWN_EXT = ".md";
 
-/** Bỏ qua file/thư mục ẩn (bắt đầu bằng dấu chấm) và các thư mục cấm. */
+/** Bỏ qua file/thư mục ẩn (bắt đầu bằng dấu chấm) và các mục cấm. */
 function isIgnored(entryName: string, isDir: boolean): boolean {
   if (entryName.startsWith(".")) return true;
   if (isDir && IGNORED_DIRS.has(entryName)) return true;
+  if (!isDir && IGNORED_FILES.has(entryName)) return true;
   return false;
 }
 
@@ -81,22 +85,111 @@ async function scanDir(absDir: string): Promise<WikiNode[]> {
 }
 
 // --- Cache cây thư mục trong memory -----------------------------------------
+// Chỉ cache ở production. Ở dev, vault là dữ liệu sống (thêm/sửa .md liên tục)
+// nên luôn quét lại đĩa để file mới hiện ngay mà không phải restart server.
+
+const CACHE_ENABLED = process.env.NODE_ENV === "production";
 
 let treeCache: WikiNode[] | null = null;
 
 /**
  * Quét toàn bộ cây thư mục wiki và trả về cấu trúc lồng nhau.
- * Kết quả được cache trong memory; gọi invalidateWikiTree() để làm mới.
+ * Kết quả được cache trong memory (chỉ ở production).
  */
 export async function getWikiTree(): Promise<WikiNode[]> {
-  if (treeCache) return treeCache;
-  treeCache = await scanDir(WIKI_ROOT_PATH);
+  if (CACHE_ENABLED && treeCache) return treeCache;
+  try {
+    treeCache = await scanDir(WIKI_ROOT_PATH);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw err;
+  }
   return treeCache;
 }
 
 /** Xoá cache cây thư mục (vd khi file thay đổi). */
 export function invalidateWikiTree(): void {
   treeCache = null;
+  linkIndexCache = null;
+}
+
+// --- Index title/tên -> slug (để resolve wikilink) --------------------------
+
+/** Làm phẳng cây, trả về danh sách node là file. */
+function flattenFiles(nodes: WikiNode[]): WikiNode[] {
+  const out: WikiNode[] = [];
+  for (const n of nodes) {
+    if (n.type === "file") out.push(n);
+    else if (n.children) out.push(...flattenFiles(n.children));
+  }
+  return out;
+}
+
+/** Lấy `title` trong front-matter YAML (nếu có) của nội dung .md. */
+function extractFrontmatterTitle(content: string): string | null {
+  const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return null;
+  const titleLine = m[1].match(/^title:\s*(.+)$/m);
+  if (!titleLine) return null;
+  return titleLine[1].trim().replace(/^["']|["']$/g, "") || null;
+}
+
+/** Tên cuối của slug (basename), vd "01_Business/checkout" -> "checkout". */
+function basenameOfSlug(slug: string): string {
+  const i = slug.lastIndexOf("/");
+  return i === -1 ? slug : slug.slice(i + 1);
+}
+
+let linkIndexCache: Map<string, string> | null = null;
+
+/**
+ * Map khoá-tra-cứu (đã lowercase) -> slug, để resolve wikilink `[[...]]`.
+ * Mỗi file được index theo: slug đầy đủ, basename, và title front-matter.
+ * Khoá trùng: ưu tiên slug đầy đủ > title > basename (không ghi đè khoá đã có
+ * từ nguồn ưu tiên cao hơn).
+ */
+export async function getWikiLinkIndex(): Promise<Map<string, string>> {
+  if (CACHE_ENABLED && linkIndexCache) return linkIndexCache;
+
+  const tree = await getWikiTree();
+  const files = flattenFiles(tree);
+  const index = new Map<string, string>();
+  const add = (key: string, slug: string) => {
+    const k = key.toLowerCase();
+    if (!index.has(k)) index.set(k, slug);
+  };
+
+  // Pass 1: slug đầy đủ (ưu tiên cao nhất).
+  for (const f of files) add(f.slug, f.slug);
+
+  // Pass 2: title front-matter.
+  for (const f of files) {
+    const content = await getFileContent(f.slug);
+    const title = content ? extractFrontmatterTitle(content) : null;
+    if (title) add(title, f.slug);
+  }
+
+  // Pass 3: basename (ưu tiên thấp nhất, dễ trùng).
+  for (const f of files) add(basenameOfSlug(f.slug), f.slug);
+
+  linkIndexCache = index;
+  return index;
+}
+
+/**
+ * Resolve một target wikilink (phần trước dấu `|`) thành slug.
+ * Thử: khoá nguyên văn -> bỏ đuôi .md -> slugify cơ bản. Trả null nếu không có.
+ */
+export function resolveWikiLink(
+  target: string,
+  index: Map<string, string>,
+): string | null {
+  const cleaned = target.trim().replace(/\.md$/i, "");
+  const direct = index.get(cleaned.toLowerCase());
+  if (direct) return direct;
+  // fallback: lấy basename của target (vd "Folder/Name" -> "Name").
+  const base = basenameOfSlug(cleaned);
+  return index.get(base.toLowerCase()) ?? null;
 }
 
 // --- Đọc nội dung file (chống path traversal) -------------------------------

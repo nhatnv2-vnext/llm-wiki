@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-VAULT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# Script ở apps/System/agent_skills -> lên 3 cấp tới gốc vault.
+VAULT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 WIKI_DIR="$VAULT_ROOT/02_Wiki"
 
 REQUIRED_KEYS=("title" "type" "source" "status" "last_synced")

@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/.next
+**/dist
+.git
+.gitignore
+*.md
+!02_Wiki/**/*.md
+02_Wiki/_Archive
+.lancedb
+*.log
+.env*
+!.env.example
+apps/System/agent_skills
