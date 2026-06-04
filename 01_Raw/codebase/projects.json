@@ -8,20 +8,5 @@
     "description": "string — mô tả ngắn về project",
     "active": "boolean — true nếu project đang cần wiki, false để tạm bỏ qua"
   },
-  "projects": [
-    {
-      "name": "laptop-shop",
-      "local_path": "/Users/nhatnguyen/Documents/Github/code-demo/laptop-shop",
-      "type": "nestjs",
-      "description": "Backend NestJS của laptop-shop (trong code-demo).",
-      "active": true
-    },
-    {
-      "name": "laptop-shop-angular",
-      "local_path": "/Users/nhatnguyen/Documents/Github/code-demo/laptop-shop-angular",
-      "type": "angular",
-      "description": "Frontend Angular của laptop-shop (trong code-demo).",
-      "active": true
-    }
-  ]
+  "projects": []
 }
