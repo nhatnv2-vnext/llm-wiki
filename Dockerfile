@@ -37,6 +37,26 @@ RUN mkdir -p /wiki
 RUN --mount=type=cache,id=nextjs-cache,target=/app/apps/web/.next/cache \
     pnpm --filter web build
 
+# Compile ingestion script thành ESM bundle.
+RUN cd apps/web && npx esbuild scripts/ingest-rag.ts \
+    --bundle \
+    --platform=node \
+    --format=esm \
+    --external:@lancedb/lancedb \
+    --external:apache-arrow \
+    "--external:node:*" \
+    --outfile=scripts/ingest-rag.mjs
+
+# Tạo môi trường chạy riêng cho ingest script:
+# script + node_modules của nó nằm trong /ingest — hoàn toàn tách khỏi /app.
+# Dùng npm (không phải pnpm) để tránh symlink của pnpm virtual store.
+RUN mkdir /ingest && \
+    cp apps/web/scripts/ingest-rag.mjs /ingest/ingest-rag.mjs && \
+    cd /ingest && \
+    npm install @lancedb/lancedb apache-arrow \
+        --no-save --no-audit --no-fund \
+        --registry https://registry.npmmirror.com
+
 # ── Stage 3: runtime image (nhỏ gọn) ───────────────────────────────────────
 FROM node:22-slim AS runner
 WORKDIR /app
@@ -48,12 +68,19 @@ ENV LANCEDB_PATH=/data/lancedb
 
 RUN groupadd --system --gid 1001 nodejs && \
     useradd  --system --uid 1001 --gid nodejs --no-create-home nextjs && \
-    mkdir -p /wiki /data/lancedb
+    mkdir -p /wiki /data/lancedb && \
+    chown nextjs:nodejs /data/lancedb
 
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static     ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public           ./apps/web/public
 
+# /ingest chứa script + node_modules riêng — không đụng tới /app/node_modules.
+COPY --from=builder --chown=nextjs:nodejs /ingest /ingest
+
+COPY --chown=nextjs:nodejs entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 USER nextjs
 EXPOSE 3000
-CMD ["node", "apps/web/server.js"]
+CMD ["/entrypoint.sh"]

@@ -24,6 +24,15 @@ apps/web/*.tsbuildinfo
 .turbo/
 **/.turbo/
 
+# Generated files — không commit
+apps/web/scripts/ingest-rag.mjs
+apps/web/.lancedb/
+
+# Environment files — chỉ commit .env.example
+.env.local
+.env.staging
+.env.production
+
 # Auto-gen RAG index (rebuild bằng `npm run index-vault`)
 02_Wiki/00_Dashboard/Vault_Index.json
 

@@ -59,6 +59,67 @@ Lấy cảm hứng từ phương pháp **context engineering + spec-driven devel
 - **Versioning (Archiving):** Khi AI cập nhật một file trong Wiki, nó BẮT BUỘC phải copy/di chuyển phiên bản cũ vào `02_Wiki/_Archive/` để lưu lại lịch sử trước khi ghi đè nội dung mới.
 
 
+## 🐳 Chạy Web App (Docker)
+
+Web app (`apps/web`) hiển thị Wiki dưới dạng website với tính năng RAG search.
+
+### Yêu cầu
+
+- Docker & Docker Compose v2.1+
+- Google API Key (dùng model `gemini-embedding-001` để embedding)
+
+### Cấu hình môi trường
+
+Tạo file env tương ứng với môi trường bạn muốn chạy (không commit các file này lên git):
+
+```bash
+# Tham khảo .env.example
+cp .env.example .env.local      # local
+cp .env.example .env.staging    # staging
+cp .env.example .env.production # production
+```
+
+Mở file vừa tạo và điền `GOOGLE_API_KEY`:
+
+```env
+GOOGLE_API_KEY=your-google-api-key-here
+```
+
+### Chạy
+
+```bash
+# Local
+docker compose --env-file .env.local up --build
+
+# Staging
+docker compose --env-file .env.staging up --build
+
+# Production
+docker compose --env-file .env.production up --build
+```
+
+Lần đầu khởi động, container sẽ tự động:
+1. Chạy ingestion pipeline — đọc toàn bộ `02_Wiki/`, embedding và lưu vào LanceDB
+2. Khởi động Next.js server tại `http://localhost:3000`
+
+Từ lần 2 trở đi, ingestion chỉ re-embed các file đã thay đổi (incremental) nên restart rất nhanh.
+
+### Chạy ingestion thủ công (ngoài Docker)
+
+```bash
+cd apps/web
+
+# Lần đầu hoặc khi muốn reset toàn bộ index
+npm run build-index -- --force
+
+# Incremental — chỉ re-embed file đã thay đổi
+npm run build-index
+```
+
+> Yêu cầu: `GOOGLE_API_KEY`, `WIKI_ROOT_PATH`, `LANCEDB_PATH` đã có trong `apps/web/.env.local`.
+
+---
+
 ## 🛠 Lệnh nhanh (NPM Scripts)
 
 Các script tự động hóa được đặt trong thư mục `System`:

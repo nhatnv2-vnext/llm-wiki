@@ -9,6 +9,7 @@ services:
       - NODE_ENV=production
       - WIKI_ROOT_PATH=/wiki
       - LANCEDB_PATH=/data/lancedb
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     volumes:
       # 02_Wiki mount read-only — app chỉ đọc, không ghi.
       - ./02_Wiki:/wiki:ro
