@@ -66,7 +66,19 @@ Web app (`apps/web`) hiển thị Wiki dưới dạng website với tính năng 
 ### Yêu cầu
 
 - Docker & Docker Compose v2.1+
-- Google API Key (dùng model `gemini-embedding-001` để embedding)
+- Google API Key — dùng cho cả embedding (`gemini-embedding-001`) và sinh câu
+  trả lời (`gemini-2.5-flash` qua Vercel AI SDK)
+
+### API RAG
+
+| Endpoint | Mô tả |
+|---|---|
+| `POST /api/search` | Nhận `{ query }` → trả Top-5 chunk liên quan (`text_content` + `file_path`), đã dedupe. |
+| `POST /api/chat` | Nhận `{ query }` → **stream** (SSE) câu trả lời Markdown bám ngữ cảnh wiki, kèm `sources` (file_path) trong message metadata. |
+
+Cả hai có guardrails: chặn prompt injection / từ độc hại / query quá dài, che
+PII, và từ chối câu hỏi ngoài phạm vi wiki (`outOfScope`). `/api/chat` chỉ trả
+lời dựa trên context nội bộ, không bịa kiến thức ngoài.
 
 ### Cấu hình môi trường
 
