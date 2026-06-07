@@ -22,8 +22,10 @@ import { Field, FixedSizeList, Float32, Schema, Utf8 } from "apache-arrow";
 // ---------------------------------------------------------------------------
 
 async function loadEnvLocal(): Promise<void> {
+  // Env khai báo ở MỘT nơi: root monorepo (.env.local), không phải apps/web.
+  // scriptDir = apps/web/scripts -> apps/web -> apps -> <root>
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-  const envPath = path.resolve(scriptDir, "..", ".env.local");
+  const envPath = path.resolve(scriptDir, "..", "..", "..", ".env.local");
   try {
     const raw = await fs.readFile(envPath, "utf-8");
     for (const line of raw.split(/\r?\n/)) {

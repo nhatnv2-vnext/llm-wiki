@@ -79,11 +79,17 @@ cp .env.example .env.staging    # staging
 cp .env.example .env.production # production
 ```
 
-Mở file vừa tạo và điền `GOOGLE_API_KEY`:
+Mở file vừa tạo và điền các biến (xem [`.env.example`](.env.example)):
 
 ```env
 GOOGLE_API_KEY=your-google-api-key-here
+# Chỉ cần cho chạy local/ingest ngoài Docker (Docker tự ghi đè 2 biến này):
+WIKI_ROOT_PATH=/absolute/path/to/My_Project_Vault/02_Wiki
+LANCEDB_PATH=.lancedb
 ```
+
+> Env khai báo ở **một nơi duy nhất**: `.env.local` ở gốc monorepo. Compose,
+> local dev và script ingest đều đọc chung file này.
 
 ### Chạy
 
@@ -98,25 +104,52 @@ docker compose --env-file .env.staging up --build
 docker compose --env-file .env.production up --build
 ```
 
-Lần đầu khởi động, container sẽ tự động:
+**Mỗi lần** container khởi động, `entrypoint.sh` tự động:
 1. Chạy ingestion pipeline — đọc toàn bộ `02_Wiki/`, embedding và lưu vào LanceDB
 2. Khởi động Next.js server tại `http://localhost:3000`
 
 Từ lần 2 trở đi, ingestion chỉ re-embed các file đã thay đổi (incremental) nên restart rất nhanh.
 
+> **Lưu ý — Docker KHÔNG dùng `npm run build-index`.** Để image runtime gọn và
+> không phụ thuộc `tsx`/pnpm, ingestion được đóng gói khác:
+> - Lúc **build image**: `esbuild` bundle `scripts/ingest-rag.ts` thành
+>   `ingest-rag.mjs`, đặt cùng `node_modules` riêng trong thư mục `/ingest`.
+> - Lúc **container chạy**: `entrypoint.sh` gọi `node /ingest/ingest-rag.mjs`
+>   rồi mới khởi động Next.js (`node server.js`).
+>
+> Cả hai đường (`npm run build-index` ở local và `/ingest/ingest-rag.mjs` trong
+> Docker) **dùng chung file nguồn** `scripts/ingest-rag.ts` nên logic incremental
+> giống hệt nhau — chỉ khác cách đóng gói & thời điểm chạy. Trong Docker, biến
+> env do Compose bơm sẵn vào `process.env`, không đọc từ file `.env.local`.
+
 ### Chạy ingestion thủ công (ngoài Docker)
 
+Script `build-index` đọc toàn bộ `02_Wiki/`, embedding qua Google rồi lưu vào
+LanceDB. Có thể chạy từ **gốc monorepo** hoặc từ `apps/web` (kết quả như nhau):
+
 ```bash
-cd apps/web
+# Từ gốc monorepo (My_Project_Vault/)
+npm run build-index               # incremental — chỉ re-embed file đã thay đổi
+npm run build-index -- --force    # reset & re-index toàn bộ
 
-# Lần đầu hoặc khi muốn reset toàn bộ index
-npm run build-index -- --force
-
-# Incremental — chỉ re-embed file đã thay đổi
-npm run build-index
+# Hoặc từ apps/web
+cd apps/web && npm run build-index
 ```
 
-> Yêu cầu: `GOOGLE_API_KEY`, `WIKI_ROOT_PATH`, `LANCEDB_PATH` đã có trong `apps/web/.env.local`.
+Xem nhanh nội dung index đã build:
+
+```bash
+npm run view-index                # (chạy được từ gốc hoặc apps/web)
+```
+
+> **Yêu cầu env (khai báo ở MỘT nơi):** `GOOGLE_API_KEY`, `WIKI_ROOT_PATH`,
+> `LANCEDB_PATH` phải có trong `.env.local` ở **gốc monorepo**
+> (`My_Project_Vault/.env.local`). Local dev (`apps/web`), script ingest và
+> Docker Compose đều đọc chung file này — không cần tạo `apps/web/.env.local`
+> riêng. Tham khảo [`.env.example`](.env.example).
+>
+> Lần đầu chạy `build-index` có thể mất vài phút (gọi Google Embedding API cho
+> mọi chunk). Các lần sau là incremental nên rất nhanh.
 
 ---
 

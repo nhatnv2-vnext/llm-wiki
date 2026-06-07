@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "build-index": "tsx scripts/ingest-rag.ts",
-    "view-index": "tsx scripts/view-index.ts"
+    "build-index": "npx tsx scripts/ingest-rag.ts",
+    "view-index": "npx tsx scripts/view-index.ts"
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.30.0",

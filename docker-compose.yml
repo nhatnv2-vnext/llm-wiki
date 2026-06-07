@@ -5,11 +5,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${PORT:-3000}:3000"
+    # Env khai báo ở MỘT nơi duy nhất: .env.local (root). Compose nạp trực tiếp.
+    env_file:
+      - .env.local
     environment:
+      # Các biến đặc thù môi trường container, ghi đè giá trị trong .env.local nếu có.
       - NODE_ENV=production
       - WIKI_ROOT_PATH=/wiki
       - LANCEDB_PATH=/data/lancedb
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     volumes:
       # 02_Wiki mount read-only — app chỉ đọc, không ghi.
       - ./02_Wiki:/wiki:ro
@@ -17,7 +20,14 @@ services:
       - lancedb_data:/data/lancedb
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      # Dùng node thay vì wget — image node:22-slim không có wget.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

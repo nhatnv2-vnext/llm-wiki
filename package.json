@@ -7,7 +7,9 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "start": "turbo run start",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "build-index": "pnpm --filter web build-index",
+    "view-index": "pnpm --filter web view-index"
   },
   "devDependencies": {
     "turbo": "^2.9.16"
