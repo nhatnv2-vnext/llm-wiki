@@ -1,5 +1,9 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+} from "ai";
 import { NextResponse } from "next/server";
 
 import { CHAT_MODEL, readGoogleApiKey } from "@/lib/config";
@@ -60,12 +64,19 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // Không có chunk liên quan → câu hỏi ngoài phạm vi wiki, không gọi LLM.
+  // Vẫn trả về dạng UI message stream để client (useChat) render thống nhất.
   if (chunks.length === 0) {
-    return NextResponse.json({
-      outOfScope: true,
-      sources: [],
-      message: "Không tìm thấy nội dung liên quan trong wiki. Hãy đặt câu hỏi về tài liệu trong wiki.",
+    const text =
+      "Không tìm thấy nội dung liên quan trong wiki. Hãy đặt câu hỏi về tài liệu trong wiki.";
+    const stream = createUIMessageStream({
+      execute: ({ writer }) => {
+        writer.write({ type: "message-metadata", messageMetadata: { sources: [], outOfScope: true } });
+        writer.write({ type: "text-start", id: "0" });
+        writer.write({ type: "text-delta", id: "0", delta: text });
+        writer.write({ type: "text-end", id: "0" });
+      },
     });
+    return createUIMessageStreamResponse({ stream });
   }
 
   const sources = [...new Set(chunks.map((c) => c.file_path))];

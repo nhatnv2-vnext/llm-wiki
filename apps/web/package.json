@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.80",
+    "@ai-sdk/react": "^3.0.199",
     "@lancedb/lancedb": "^0.30.0",
     "ai": "^6.0.197",
     "apache-arrow": "^18.1.0",
