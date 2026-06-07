@@ -21,13 +21,27 @@ Dự án mẫu được áp dụng: **laptop-shop** (NestJS + Prisma + MySQL + B
      ```
    - *Lưu ý: Không hardcode token vào file `.mcp.json` để tránh rò rỉ bảo mật.*
 
-2. **CodeGraph & Figma (Cấp quyền hoạt động - Pending approval):**
-   - Khởi tạo index cho CodeGraph (chạy 1 lần duy nhất):
+2. **CodeGraph (Knowledge graph của source code):**
+
+   CodeGraph là index AST (tree-sitter) của mã nguồn, giúp các skill `/spec-feature`,
+   `/spec-database`, `/spec-architecture`, `/ask-vault`... lần theo quan hệ gọi
+   (controller → service → repository), tìm callers/callees và impact analysis
+   chính xác hơn grep. **Tùy chọn nhưng nên có** — nếu thiếu, các skill tự fallback
+   sang Read/Grep.
+
+   - Cài CLI (1 lần): `npm i -g @colbymchenry/codegraph` (kiểm tra: `which codegraph`).
+   - **Index phải build TRONG TỪNG thư mục source code** (không phải ở vault).
+     Với mỗi project đã đăng ký ở `projects.json`, vào `local_path` rồi chạy:
      ```bash
-     codegraph init -i
+     cd /đường_dẫn/tới/source-project   # vd .../code-demo/laptop-shop
+     codegraph init -i                  # tạo thư mục .codegraph/ (chạy 1 lần)
      ```
-   - Mở terminal, chạy lệnh `claude` (chế độ tương tác). Khi được hỏi cấp quyền cho các server trong `.mcp.json`, hãy chọn "Approve".
-   - Kiểm tra trạng thái bằng lệnh `claude mcp list` hoặc gõ `/mcp` trong Claude.
+   - File watcher của CodeGraph tự cập nhật index khi code đổi (~500ms debounce).
+   - Skill truy vấn index của project khác qua tham số `projectPath` (trỏ tới
+     thư mục chứa `.codegraph/`), nên không cần index ở vault root.
+   - Mở `claude` (tương tác), khi được hỏi cấp quyền MCP trong `.mcp.json` → "Approve".
+     Kiểm tra: `claude mcp list` hoặc gõ `/mcp`. Xem trạng thái index: tool
+     `codegraph_status` (hoặc `codegraph status` ở thư mục project).
 
 3. **Google Drive (Yêu cầu xác thực OAuth):**
    - Lần đầu sử dụng tính năng đọc tài liệu Drive, server sẽ yêu cầu đăng nhập. Hãy theo dõi thông báo trên terminal khi chạy Claude để bấm vào link xác thực.
@@ -198,6 +212,23 @@ Bạn không cần mở file cấu hình bằng tay. Chỉ cần gọi lệnh v�
 ```
 AI sẽ tự động phân tích đó là dự án Frontend, Backend hay Monorepo và ghi danh nó vào file `01_Raw/codebase/projects.json`.
 
+### Bước 1b: Build CodeGraph cho source code (khuyến nghị)
+
+CodeGraph là index AST giúp các bước Spec sau (Bước 4) lần theo quan hệ gọi
+(controller → service → DB), callers/callees và impact analysis **chính xác hơn**
+so với chỉ grep. **Tùy chọn** — nếu bỏ qua, skill tự fallback sang Read/Grep.
+
+```bash
+npm i -g @colbymchenry/codegraph        # cài CLI 1 lần (kiểm tra: which codegraph)
+
+cd <local_path_của_project>             # vào đúng thư mục source vừa add ở Bước 1
+codegraph init -i                        # tạo .codegraph/ trong project (1 lần)
+```
+
+> Build index **trong từng thư mục source**, KHÔNG phải ở vault. File watcher tự
+> cập nhật khi code đổi. Skill sẽ tự trỏ tới `.codegraph/` của project qua
+> `projectPath`. Chi tiết: xem mục *"Cấu hình các công cụ AI (MCP Servers) → CodeGraph"* ở đầu README.
+
 ### Bước 2: Quét Source Code tự động (Scan)
 
 Không cần phải nhập tay danh sách màn hình hay API nữa. Hãy ra lệnh cho AI quét dự án vừa thêm:
@@ -220,6 +251,10 @@ AI sẽ gom nhóm các Màn hình, Tính năng backend và Database Schema để
 Dựa vào file `Index.md`, bạn có thể ra lệnh cho AI viết tài liệu chi tiết cho từng phần:
 - Đối với giao diện Frontend: Gõ `/spec-screen <ID>` (ví dụ: `/spec-screen SCR_001`).
 - Đối với API/Logic Backend: Gõ `/spec-feature <ID>` (ví dụ: `/spec-feature FEA_002`).
+- Database: Gõ `/spec-database <name>` (ví dụ: `/spec-database laptop-shop-db`).
+
+> 💡 Nếu đã build CodeGraph ở **Bước 1b**, các skill này sẽ dùng index đó để
+> trích call graph / quan hệ service↔bảng chính xác (kèm `file:line`) thay vì đọc mò.
 
 ### Bước 5: Liên kết Tri thức (Cross-link)
 

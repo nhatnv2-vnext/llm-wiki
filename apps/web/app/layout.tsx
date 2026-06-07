@@ -3,6 +3,7 @@ import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
 import AppShell from "@/components/AppShell";
+import { ChatHistoryProvider } from "@/components/ChatHistoryProvider";
 import { getWikiTree } from "@/lib/fs-tree";
 
 // Theme Anthropic (Streamlit): Space Grotesk cho body + heading, Space Mono cho code.
@@ -22,6 +23,11 @@ export const metadata: Metadata = {
   description: "Trình xem wiki cho Obsidian vault",
 };
 
+// Layout đọc cây wiki từ filesystem (getWikiTree) để dựng sidebar. Ép động cho
+// MỌI trang dùng layout này — nếu prerender tĩnh lúc build, sidebar sẽ bị đông
+// cứng rỗng (trong Docker /wiki còn rỗng lúc build, chỉ mount khi container chạy).
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -40,7 +46,10 @@ export default async function RootLayout({
         className="min-h-full bg-background text-foreground"
         suppressHydrationWarning
       >
-        <AppShell tree={tree}>{children}</AppShell>
+        {/* ChatHistoryProvider ở layout → state chat không mất khi điều hướng. */}
+        <ChatHistoryProvider>
+          <AppShell tree={tree}>{children}</AppShell>
+        </ChatHistoryProvider>
       </body>
     </html>
   );

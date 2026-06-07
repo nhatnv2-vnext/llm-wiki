@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import SidebarContent from "@/components/Sidebar";
+import SidebarTabs from "@/components/SidebarTabs";
 import type { WikiNode } from "@/lib/fs-tree";
 
 /**
@@ -134,32 +134,35 @@ export default function AppShell({
           collapsed ? "overflow-hidden border-r-0" : "border-r border-border"
         }`}
       >
-        <SidebarContent tree={tree} />
-
-        {/* Nút collapse — nổi góc phải-trên sidebar, hiện khi hover */}
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label="Thu gọn sidebar"
-          className="absolute right-2 top-2.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-accent-soft hover:text-accent-hover"
-        >
-          {/* icon panel-collapse-left */}
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-            <line x1="9" y1="4" x2="9" y2="20" />
-            <path d="M15 9l-2 3 2 3" />
-          </svg>
-        </button>
+        <SidebarTabs
+          tree={tree}
+          headerAction={
+            // Nút thu gọn nằm trong thanh tab → không đè lên tab "Lịch sử chat".
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label="Thu gọn sidebar"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-accent-soft hover:text-accent-hover"
+            >
+              {/* icon panel-collapse-left */}
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <line x1="9" y1="4" x2="9" y2="20" />
+                <path d="M15 9l-2 3 2 3" />
+              </svg>
+            </button>
+          }
+        />
 
         {/* Handle kéo ở mép phải (ẩn khi đã collapse) */}
         {!collapsed && (
@@ -220,8 +223,30 @@ export default function AppShell({
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-foreground/40"
           />
-          <div className="absolute inset-y-0 left-0 w-72 max-w-[80%] border-r border-border shadow-xl">
-            <SidebarContent tree={tree} onNavigate={() => setOpen(false)} />
+          <div className="absolute inset-y-0 left-0 w-72 max-w-[80%] border-r border-border bg-surface shadow-xl">
+            {/* Header riêng cho drawer mobile để không bị header trang đè lên tabs */}
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <span className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="inline-block h-2.5 w-2.5 rounded-full bg-accent"
+                />
+                <span className="text-base font-bold tracking-tight text-foreground">
+                  LLM Wiki
+                </span>
+              </span>
+              <button
+                type="button"
+                aria-label="Đóng menu"
+                onClick={() => setOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-accent-soft hover:text-accent-hover"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="h-[calc(100%-57px)]">
+              <SidebarTabs tree={tree} onNavigate={() => setOpen(false)} />
+            </div>
           </div>
         </div>
       )}

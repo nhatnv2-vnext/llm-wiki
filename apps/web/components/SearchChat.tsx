@@ -1,10 +1,11 @@
 "use client";
 
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import ChatMarkdown from "@/components/ChatMarkdown";
+import { useChatHistory } from "@/components/ChatHistoryProvider";
 import Sources from "@/components/Sources";
 
 /** Metadata kèm theo message assistant từ /api/chat. */
@@ -19,9 +20,27 @@ function messageText(message: { parts: Array<{ type: string; text?: string }> })
 }
 
 export default function SearchChat() {
-  const [input, setInput] = useState("");
+  const {
+    conversations,
+    activeId,
+    newConversation,
+    setActive,
+    saveConversation,
+  } = useChatHistory();
 
-  const { messages, sendMessage, status, error } = useChat({
+  const [input, setInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Hội thoại đang mở (nếu có) để khôi phục messages.
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c.id === activeId) ?? null,
+    [conversations, activeId],
+  );
+
+  // useChat instance ỔN ĐỊNH (id cố định) — KHÔNG key theo activeId, vì đổi id
+  // sẽ remount useChat và vứt mất message vừa gửi. Việc gắn message vào hội
+  // thoại nào do `currentIdRef` quản lý (cập nhật đồng bộ trước khi gửi).
+  const { messages, sendMessage, status, error, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       // Route nhận { query } (tái dùng từ #8/#9), không phải mảng messages.
@@ -38,13 +57,61 @@ export default function SearchChat() {
 
   const isBusy = status === "submitted" || status === "streaming";
 
+  // ID hội thoại đang được hiển thị trong khung chat (đồng bộ qua ref để không
+  // dính nhịp re-render của state).
+  const currentIdRef = useRef<string | null>(null);
+
+  // Khi activeId đổi (mở từ sidebar / gợi ý) và KHÁC cái đang hiển thị → nạp lại.
+  useEffect(() => {
+    if (activeId && activeId !== currentIdRef.current) {
+      currentIdRef.current = activeId;
+      setMessages((activeConversation?.messages ?? []) as UIMessage[]);
+    }
+    if (!activeId && currentIdRef.current === null) {
+      // chưa có hội thoại nào — giữ khung rỗng
+    }
+  }, [activeId, activeConversation, setMessages]);
+
+  // Lưu lại hội thoại mỗi khi stream xong (status ready và có messages).
+  useEffect(() => {
+    const id = currentIdRef.current;
+    if (status !== "ready" || messages.length === 0 || !id) return;
+    const firstUser = messages.find((m) => m.role === "user");
+    const title = firstUser ? messageText(firstUser).slice(0, 80) : "Hội thoại";
+    saveConversation(id, title, messages as UIMessage[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, messages]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const q = input.trim();
     if (!q || isBusy) return;
+    // Chưa có hội thoại đang mở → tạo id mới (chỉ đặt ref + active, KHÔNG remount
+    // useChat) rồi gửi ngay trong cùng lượt — message không bị mất.
+    if (!currentIdRef.current) {
+      const id = newConversation();
+      currentIdRef.current = id;
+    }
     sendMessage({ text: q });
     setInput("");
+    setShowSuggestions(false);
   }
+
+  /** Bắt đầu hội thoại mới (xoá khung chat hiện tại, không xoá lịch sử). */
+  function handleNew() {
+    const id = newConversation();
+    currentIdRef.current = id;
+    setMessages([]);
+    setInput("");
+  }
+
+  /** Gợi ý từ khoá gần đây (lọc theo text đang gõ). */
+  const suggestions = useMemo(() => {
+    const q = input.trim().toLowerCase();
+    return conversations
+      .filter((c) => c.title && (q === "" || c.title.toLowerCase().includes(q)))
+      .slice(0, 6);
+  }, [conversations, input]);
 
   const hasMessages = messages.length > 0;
 
@@ -52,14 +119,27 @@ export default function SearchChat() {
     <div className="flex flex-col gap-8">
       {/* Thanh search lớn */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface p-2 shadow-sm focus-within:border-accent">
+        <div className="relative flex items-center gap-2 rounded-2xl border border-border bg-surface p-2 shadow-sm focus-within:border-accent">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            // Trễ để click vào suggestion kịp xử lý trước khi blur ẩn dropdown.
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             placeholder="Hỏi gì đó về wiki dự án…"
             aria-label="Câu hỏi"
             className="flex-1 bg-transparent px-3 py-3 text-base text-foreground outline-none placeholder:text-muted"
           />
+          {hasMessages && (
+            <button
+              type="button"
+              onClick={handleNew}
+              className="rounded-xl border border-border px-3 py-3 text-sm text-muted transition-colors hover:text-foreground"
+              title="Hỏi câu mới"
+            >
+              + Mới
+            </button>
+          )}
           <button
             type="submit"
             disabled={isBusy || input.trim() === ""}
@@ -67,6 +147,34 @@ export default function SearchChat() {
           >
             {isBusy ? "Đang trả lời…" : "Hỏi"}
           </button>
+
+          {/* Dropdown gợi ý từ khoá gần đây */}
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="absolute left-0 right-0 top-full z-10 mt-2 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+              <li className="px-4 pt-2 text-xs font-semibold uppercase tracking-wider text-muted">
+                Tìm kiếm gần đây
+              </li>
+              {suggestions.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    // onMouseDown để chạy trước onBlur của input.
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      // setActive → effect tự nạp messages (so currentIdRef).
+                      setActive(c.id);
+                      setInput("");
+                      setShowSuggestions(false);
+                    }}
+                    className="block w-full truncate px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-background"
+                  >
+                    <span className="mr-2 text-muted">🕘</span>
+                    {c.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </form>
 
