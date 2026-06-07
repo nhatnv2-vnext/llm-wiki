@@ -11,7 +11,9 @@
     "view-index": "npx tsx scripts/view-index.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.80",
     "@lancedb/lancedb": "^0.30.0",
+    "ai": "^6.0.197",
     "apache-arrow": "^18.1.0",
     "mermaid": "^11.15.0",
     "next": "16.2.7",

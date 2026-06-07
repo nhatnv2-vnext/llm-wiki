@@ -65,6 +65,14 @@ export const EMBEDDING_DIM = 768;
  */
 export const EMBED_MODEL = "models/gemini-embedding-001";
 
+/**
+ * Model LLM sinh câu trả lời (Vercel AI SDK + @ai-sdk/google).
+ * Issue #9 yêu cầu gemini-1.5-flash nhưng model này đã bị Google gỡ khỏi API
+ * (v1beta: "not found"). Dùng gemini-2.5-flash — bản flash stable hiện hành,
+ * cùng phân khúc tốc độ. Đổi tại đây nếu cần model khác.
+ */
+export const CHAT_MODEL = "gemini-2.5-flash";
+
 /** Số chunk Top-K trả về cho mỗi truy vấn RAG. */
 export const RETRIEVE_TOP_K = 5;
 
