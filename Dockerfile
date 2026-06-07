@@ -63,6 +63,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+# Next standalone bind theo HOSTNAME. Mặc định = tên container nên chỉ nghe
+# trên interface đó → healthcheck localhost/127.0.0.1 fail. Đặt 0.0.0.0 để
+# nghe mọi interface (vẫn vào được qua port mapping của Docker).
+ENV HOSTNAME=0.0.0.0
 ENV WIKI_ROOT_PATH=/wiki
 ENV LANCEDB_PATH=/data/lancedb
 
