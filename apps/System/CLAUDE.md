@@ -125,6 +125,7 @@ Trigger qua `package.json`:
 |------|--------|
 | `npm run ingest` | Đọc `projects.json` → quét code tại `local_path` (ts-morph) → cập nhật `02_Wiki/` |
 | `npm run sync-drive` | Pull docs mới từ Google Drive → `01_Raw/drive_docs/` |
+| `npm run parse-docs` | Bóc tách `*.pdf` (ưu tiên `PRD*.pdf`) trong `drive_docs/` → Markdown chuẩn hoá heading (Business Rules, Use Cases…) tại `drive_docs/parsed/`. Dùng MarkItDown (Microsoft); chỉ đọc PDF gốc, ghi output ra `parsed/`. **OCR tự bật** cho PDF có ảnh nhúng (cần `poppler`+`tesseract`). Cờ nâng cao (gọi trực tiếp `node`): `--no-ocr` (tắt OCR), `--ocr` (ép mọi file), `--lang vie` (ngôn ngữ OCR) |
 | `npm run lint-specs` | Kiểm tra frontmatter |
 | `npm run audit-links` | Tìm broken wikilink + orphan note |
 | `npm run generate-graph` | Đọc `projects.json` + `schemas.json` → sinh lại sơ đồ Mermaid |
