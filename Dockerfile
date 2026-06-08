@@ -13,7 +13,9 @@ COPY apps/System/package.json ./apps/System/
 # --mount=type=cache giữ pnpm store giữa các lần build → lần 2+ rất nhanh.
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     corepack prepare pnpm@10.17.1 --activate && \
-    pnpm config set registry https://registry.npmmirror.com && \
+    pnpm config set registry https://registry.npmjs.org && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-maxtimeout 120000 && \
     pnpm install --frozen-lockfile
 
 # ── Stage 2: build Next.js ──────────────────────────────────────────────────
@@ -55,7 +57,8 @@ RUN mkdir /ingest && \
     cd /ingest && \
     npm install @lancedb/lancedb apache-arrow \
         --no-save --no-audit --no-fund \
-        --registry https://registry.npmmirror.com
+        --fetch-retries 5 --fetch-retry-maxtimeout 120000 \
+        --registry https://registry.npmjs.org
 
 # ── Stage 3: runtime image (nhỏ gọn) ───────────────────────────────────────
 FROM node:22-slim AS runner

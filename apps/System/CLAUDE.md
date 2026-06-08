@@ -30,8 +30,16 @@ Nếu phát hiện code/docs bị lỗi → ghi vào `02_Wiki/04_Tasks_&_Logs/Co
 ├── database/
 │   └── schemas.json        ← Link đến file schema DB (Prisma, SQL, ...)
 └── drive_docs/
-    └── .gitkeep             ← Tài liệu pull từ Google Drive (PRD, specs)
+    ├── .gitkeep             ← Tài liệu pull từ Google Drive (PRD, specs)
+    ├── PRD_v{N}.pdf         ← PRD theo version (vd PRD_v1.pdf, PRD_v2.pdf); bản current = version cao nhất
+    ├── parsed/              ← Bản .md đã parse, đặt tên trùng (PRD_v{N}.md)
+    └── archive/            ← Bản PRD cũ tự move về đây + con trỏ `.current`
 ```
+
+> **Versioning PRD (GĐ4.1):** PRD đặt tên `PRD_v{N}.pdf`. Sau `sync-drive`, script
+> `archive_prd.js` tự move mọi bản cũ hơn version cao nhất vào `drive_docs/archive/`
+> (kèm file parsed tương ứng) và ghi tên bản current vào `archive/.current`.
+> KHÔNG xóa bản cũ — giữ cho Smart Diffing (#13).
 
 - **`projects.json`**: Mỗi entry có `name`, `local_path`, `type`, `active`. Scripts đọc `local_path` để truy cập source code bên ngoài vault.
 - **`Screens.json`**: Mỗi entry có `id`, `name`, `project` (liên kết với projects.json), `component`, `figma_node_url`. Dùng bởi skill `/spec-screen`.
@@ -124,7 +132,8 @@ Trigger qua `package.json`:
 | Lệnh | Tác vụ |
 |------|--------|
 | `npm run ingest` | Đọc `projects.json` → quét code tại `local_path` (ts-morph) → cập nhật `02_Wiki/` |
-| `npm run sync-drive` | Pull docs mới từ Google Drive → `01_Raw/drive_docs/` |
+| `npm run sync-drive` | Pull docs mới từ Google Drive → `01_Raw/drive_docs/` (tự chạy `archive-prd` sau đó) |
+| `npm run archive-prd` | Versioning PRD: move bản cũ `PRD_v{N}.pdf` (+ parsed `.md`) vào `01_Raw/drive_docs/archive/`, ghi con trỏ `.current` |
 | `npm run parse-docs` | Bóc tách `*.pdf` (ưu tiên `PRD*.pdf`) trong `drive_docs/` → Markdown chuẩn hoá heading (Business Rules, Use Cases…) tại `drive_docs/parsed/`. Dùng MarkItDown (Microsoft); chỉ đọc PDF gốc, ghi output ra `parsed/`. **OCR tự bật** cho PDF có ảnh nhúng (cần `poppler`+`tesseract`). Cờ nâng cao (gọi trực tiếp `node`): `--no-ocr` (tắt OCR), `--ocr` (ép mọi file), `--lang vie` (ngôn ngữ OCR) |
 | `npm run lint-specs` | Kiểm tra frontmatter |
 | `npm run audit-links` | Tìm broken wikilink + orphan note |

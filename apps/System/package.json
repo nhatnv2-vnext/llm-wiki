@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "echo \"System has no dev server\"",
     "ingest": "node agent_skills/ingest_codebase.js",
-    "sync-drive": "bash agent_skills/sync_drive.sh",
+    "sync-drive": "bash agent_skills/sync_drive.sh && npm run archive-prd",
+    "archive-prd": "node agent_skills/archive_prd.js",
     "parse-docs": "node agent_skills/doc_parser_agent.js",
     "lint-specs": "bash agent_skills/lint_specs.sh",
     "audit-links": "node agent_skills/audit_links.js",

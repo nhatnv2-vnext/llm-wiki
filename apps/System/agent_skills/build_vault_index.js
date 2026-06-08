@@ -11,7 +11,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const VAULT_ROOT = path.resolve(__dirname, '..', '..');
+// Script ở apps/System/agent_skills -> lên 3 cấp tới gốc vault (nơi chứa 02_Wiki).
+const VAULT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const WIKI = path.join(VAULT_ROOT, '02_Wiki');
 const OUT = path.join(WIKI, '00_Overview', 'Vault_Index.json');
 
