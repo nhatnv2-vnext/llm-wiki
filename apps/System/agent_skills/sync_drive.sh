@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-VAULT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# Script ở apps/System/agent_skills -> lên 3 cấp tới gốc vault (nơi chứa 01_Raw).
+VAULT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 DEST="$VAULT_ROOT/01_Raw/drive_docs"
 REMOTE="${DRIVE_REMOTE:-gdrive:MyProjectDocs}"
 

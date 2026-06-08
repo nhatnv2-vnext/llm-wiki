@@ -7,7 +7,7 @@ Dự án mẫu được áp dụng: **laptop-shop** (NestJS + Prisma + MySQL + B
 
 1. Mở thư mục này bằng **Obsidian** → chọn "Open folder as vault".
 2. Mở file [`02_Wiki/00_Overview/Index.md`](02_Wiki/00_Overview/Index.md) (Map of Content) để có cái nhìn tổng quan.
-3. Đọc [`System/CLAUDE.md`](System/CLAUDE.md) để hiểu triết lý vận hành và quy tắc dành cho AI.
+3. Đọc [`apps/System/CLAUDE.md`](apps/System/CLAUDE.md) để hiểu triết lý vận hành và quy tắc dành cho AI.
 
 ### Cấu hình các công cụ AI (MCP Servers)
 
@@ -87,7 +87,9 @@ My_Project_Vault/
 │   ├── database/schemas.json        ←   Link đến file schema DB
 │   └── drive_docs/                  ←   Tài liệu từ Google Drive
 ├── 02_Wiki/                         ← Layer 2: Tri thức biên dịch (AI ghi vào đây)
-└── System/                          ← Layer 3: Bộ não (Scripts, Skills, CLAUDE.md)
+└── apps/
+    ├── System/                      ← Layer 3: Bộ não (Scripts, Skills, CLAUDE.md)
+    └── web/                         ← App Next.js (RAG UI, graph view)
 ```
 
 > **Kiến trúc JSON-based links:** Vault không chứa source code trực tiếp. Thay vào đó, các file JSON (`projects.json`, `schemas.json`) chứa tên + đường dẫn local (`local_path`) trỏ tới thư mục/file trên máy tính. Scripts và AI agents sẽ đọc đường dẫn này để trích xuất kiến thức, giúp vault gọn nhẹ và linh hoạt.
@@ -213,10 +215,11 @@ npm run view-index                # (chạy được từ gốc hoặc apps/web)
 Các script tự động hóa được đặt trong thư mục `System`:
 
 ```bash
-cd System
+cd apps/System
 
 # Đồng bộ dữ liệu gốc
-npm run sync-drive      # Kéo (pull) docs từ Google Drive → 01_Raw/drive_docs
+npm run sync-drive      # Kéo (pull) docs từ Google Drive → 01_Raw/drive_docs (tự chạy archive-prd sau đó)
+npm run archive-prd     # Versioning PRD: đẩy bản cũ vào drive_docs/archive/, ghi con trỏ .current
 npm run parse-docs      # Bóc tách PDF (PRD*.pdf) → Markdown; TỰ bật OCR nếu PDF có ảnh
 
 # Phân tích và sinh Wiki
@@ -299,7 +302,7 @@ AI sẽ tự động rà soát toàn bộ các file `.md` và tạo ra các Wiki
 1. Clone vault này về máy.
 2. Làm theo các bước ở phần **"Cách cấu trúc Wiki cho dự án mới"**.
 3. Mở vault bằng ứng dụng Obsidian (File → Open vault).
-4. Để team cùng làm việc, hãy chạy `npm run index-vault` (trong folder `System/`) mỗi khi có cập nhật lớn để tối ưu RAG.
+4. Để team cùng làm việc, hãy chạy `npm run index-vault` (trong folder `apps/System/`) mỗi khi có cập nhật lớn để tối ưu RAG.
 
 ### Quy ước commit (Commit Conventions)
 
