@@ -46,6 +46,35 @@ Dự án mẫu được áp dụng: **laptop-shop** (NestJS + Prisma + MySQL + B
 3. **Google Drive (Yêu cầu xác thực OAuth):**
    - Lần đầu sử dụng tính năng đọc tài liệu Drive, server sẽ yêu cầu đăng nhập. Hãy theo dõi thông báo trên terminal khi chạy Claude để bấm vào link xác thực.
 
+4. **MarkItDown (bóc tách PDF → Markdown — cho `npm run parse-docs`):**
+
+   > ⚠️ **Chỉ cần trên máy DEV.** `parse-docs` là bước ingest thủ công (giống
+   > `sync-drive`, `ingest`, `code-graph`): chạy local để sinh Markdown trong
+   > `01_Raw/drive_docs/parsed/`, KHÔNG phải runtime của web app. **Server / Docker
+   > KHÔNG cần cài markitdown** — Dockerfile chỉ build `apps/web`.
+
+   - [MarkItDown](https://github.com/microsoft/markitdown) là tool Python của Microsoft, dùng để parse `PRD*.pdf` trong `01_Raw/drive_docs/` thành Markdown.
+   - **macOS** (khuyến nghị dùng pipx để cô lập):
+     ```bash
+     brew install pipx                       # nếu chưa có
+     pipx install 'markitdown[pdf]'          # cài CLI markitdown (vào ~/.local/bin)
+     ```
+   - **Linux (Ubuntu/Debian)** — nếu máy dev/WSL của bạn là Linux:
+     ```bash
+     sudo apt-get install -y python3-pip pipx
+     pipx install 'markitdown[pdf]'
+     # hoặc nếu không có pipx:  pip install --user 'markitdown[pdf]'
+     ```
+   - Kiểm tra: `markitdown --help`. Script `parse-docs` tự dò binary ở PATH hoặc `~/.local/bin`; thiếu sẽ báo lỗi kèm hướng dẫn cài.
+   - **OCR (cho PDF nhiều bảng/ảnh/scan):** MarkItDown chỉ bóc *text layer*; chữ nằm trong ảnh sẽ thiếu. `parse-docs` **tự phát hiện PDF có ảnh nhúng và bật OCR** cho file đó (cần Tesseract + poppler):
+     ```bash
+     # macOS
+     brew install tesseract poppler            # + tesseract-lang nếu cần OCR đa ngôn ngữ
+     # Linux (Ubuntu/Debian)
+     sudo apt-get install -y tesseract-ocr poppler-utils   # + tesseract-ocr-vie cho tiếng Việt
+     ```
+     Nếu thiếu 2 tool này, OCR tự bỏ qua (vẫn parse text-layer bình thường). Cờ nâng cao (chạy trực tiếp `node agent_skills/doc_parser_agent.js`): `--no-ocr` (tắt OCR), `--ocr` (ép mọi file), `--lang vie` (đổi ngôn ngữ).
+
 ## 🏗 Cấu trúc 3 lớp (3-Layer Architecture)
 
 Vault được thiết kế theo nguyên tắc phân tách ranh giới rõ ràng:
@@ -188,6 +217,7 @@ cd System
 
 # Đồng bộ dữ liệu gốc
 npm run sync-drive      # Kéo (pull) docs từ Google Drive → 01_Raw/drive_docs
+npm run parse-docs      # Bóc tách PDF (PRD*.pdf) → Markdown; TỰ bật OCR nếu PDF có ảnh
 
 # Phân tích và sinh Wiki
 npm run ingest          # Build lại wiki từ source code (sử dụng ts-morph)

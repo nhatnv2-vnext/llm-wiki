@@ -36,6 +36,11 @@ apps/web/.lancedb/
 # Auto-gen RAG index (rebuild bằng `npm run index-vault`)
 02_Wiki/00_Dashboard/Vault_Index.json
 
+# Tài liệu Drive (pull bằng `npm run sync-drive`) + output parse (npm run parse-docs).
+# Đây là dữ liệu nguồn/sinh tự động, không commit; giữ .gitkeep.
+01_Raw/drive_docs/*
+!01_Raw/drive_docs/.gitkeep
+
 # Obsidian per-user
 .obsidian/workspace*.json
 .obsidian/cache/
