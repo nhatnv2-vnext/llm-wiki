@@ -4,13 +4,13 @@ on:
   pull_request:
     paths:
       - "02_Wiki/**"
-      - "System/**"
+      - "apps/System/**"
       - ".github/workflows/wiki-ci.yml"
   push:
     branches: [main]
     paths:
       - "02_Wiki/**"
-      - "System/**"
+      - "apps/System/**"
 
 jobs:
   validate:
@@ -23,17 +23,17 @@ jobs:
           node-version: "20"
 
       - name: Install System deps
-        run: npm install --prefix System --ignore-scripts
+        run: npm install --prefix apps/System --ignore-scripts
 
       - name: Lint frontmatter
-        run: bash System/agent_skills/lint_specs.sh
+        run: bash apps/System/agent_skills/lint_specs.sh
 
       - name: Audit wikilinks
-        run: node System/agent_skills/audit_links.js
+        run: node apps/System/agent_skills/audit_links.js
 
       - name: Build vault index (dry-run check)
-        run: node System/agent_skills/build_vault_index.js
+        run: node apps/System/agent_skills/build_vault_index.js
 
       - name: Stats (info only)
-        run: node System/agent_skills/vault_stats.js
+        run: node apps/System/agent_skills/vault_stats.js
         continue-on-error: true

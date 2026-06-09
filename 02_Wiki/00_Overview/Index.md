@@ -4,7 +4,7 @@ type: dashboard
 source:
   - System/CLAUDE.md
 status: reviewed
-last_synced: "2026-06-02"
+last_synced: "2026-06-09"
 tags:
   - map-of-content
   - index
@@ -48,6 +48,19 @@ Vault này được vận hành tự động bằng các AI agents phối hợp 
 ### 6. 📝 Quản lý công việc & Vận hành (`07_Tasks_&_Logs/`)
 *Nhật ký đồng bộ, danh sách công việc và báo cáo xung đột tài liệu.*
 - [[07_Tasks_&_Logs/README|Nhiệm vụ & Nhật ký]] — Hướng dẫn quản lý công việc và báo cáo lỗi đồng bộ.
+
+### 7. 🏛️ Quyết định Kiến trúc (`08_ADR/`)
+*Lịch sử các quyết định thiết kế quan trọng kèm bối cảnh, lý do và đánh đổi.*
+- [[08_ADR/README|Architecture Decision Records]] — Tại sao hệ thống được xây dựng theo cách hiện tại.
+- _Các ADR dạng `ADR_NNN_<slug>.md` được tạo bởi skill `/log-adr`._
+
+### 8. 🧪 Kiểm thử (`09_Testing/`)
+*Chiến lược kiểm thử, kịch bản test quan trọng và báo cáo coverage.*
+- [[09_Testing/README|Chiến lược Kiểm thử]] — Test strategy, test pyramid và coverage guide.
+
+### 9. 🔐 Bảo mật (`10_Security/`)
+*Cơ chế xác thực, phân quyền RBAC, chính sách API security và bản đồ dữ liệu nhạy cảm.*
+- [[10_Security/README|Bảo mật & Audit]] — Auth flow, RBAC matrix, security checklist.
 
 ---
 

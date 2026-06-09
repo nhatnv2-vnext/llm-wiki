@@ -14,10 +14,10 @@ Vault được tổ chức theo **3 lớp**, AI phải tôn trọng ranh giới 
 |-------|---------|--------------|----------|
 | **Layer 1 — Raw** | `01_Raw/` | **READ-ONLY** | Nguồn sự thật thô (config JSON + docs gốc) |
 | **Layer 2 — Wiki** | `02_Wiki/` | **READ + WRITE** | Tri thức đã biên dịch, link với nhau |
-| **Layer 3 — System** | `System/` | **READ + WRITE (có kiểm soát)** | Quy tắc, skill, automation |
+| **Layer 3 — System** | `apps/System/` | **READ + WRITE (có kiểm soát)** | Quy tắc, skill, automation |
 
 **Luật vàng:** AI **TUYỆT ĐỐI KHÔNG** chỉnh sửa bất cứ file nào trong `01_Raw/` (ngoại trừ update metadata `last_synced` trong Screens.json theo quy trình spec-screen).
-Nếu phát hiện code/docs bị lỗi → ghi vào `02_Wiki/04_Tasks_&_Logs/Conflict_Reports.md`.
+Nếu phát hiện code/docs bị lỗi → ghi vào `02_Wiki/07_Tasks_&_Logs/Conflict_Reports.md`.
 
 ### 1.1. Cấu trúc Layer 1 (`01_Raw/`)
 
@@ -126,7 +126,7 @@ Khi Agent hoặc Script cập nhật một file `.md` đã tồn tại trong `02
 
 ## 4. Skills & Triggers
 
-Các script tự động hóa nằm trong `System/agent_skills/`.
+Các script tự động hóa nằm trong `apps/System/agent_skills/`.
 Trigger qua `package.json`:
 
 | Lệnh | Tác vụ |
@@ -154,16 +154,16 @@ CodeGraph ([@colbymchenry/codegraph](https://github.com/colbymchenry/codegraph),
   ```
 - **KHÔNG** clone source CodeGraph vào vault.
 - **Input**: `local_path` từ `01_Raw/codebase/projects.json`.
-- **Output**: file `.md` skill sang `02_Wiki/06_Code_Graph/<project>/<area>/SKILL.md`. Wrapper trong `System/agent_skills/run_codegraph.sh`.
+- **Output**: file `.md` skill sang `02_Wiki/06_Code_Graph/<project>/<area>/SKILL.md`. Wrapper trong `apps/System/agent_skills/run_codegraph.sh`.
 - Index nội bộ: SQLite ở `<local_path>/.codegraph/codegraph.db` — nằm bên ngoài vault, mỗi máy tự `npm run code-graph` lần đầu.
 
 #### Khám phá live qua MCP (thay Web UI 3D cũ)
 
 CodeGraph không có Web UI 3D như GitNexus. Để Claude Code (hoặc Cursor/Codex) query graph live, dùng MCP:
 
-1. Index 1 lần: `npm --prefix System run code-graph`
+1. Index 1 lần: `npm --prefix apps/System run code-graph`
 2. Cài MCP server cho agent: `codegraph install` (interactive — chọn Claude Code).
-3. Hoặc start MCP server thủ công: `npm --prefix System run code-graph:mcp`.
+3. Hoặc start MCP server thủ công: `npm --prefix apps/System run code-graph:mcp`.
 4. Trong Claude Code, các tool `mcp__codegraph__*` xuất hiện: query symbol, callers, callees, impact analysis.
 
 CLI query trực tiếp (không cần MCP):
@@ -194,7 +194,7 @@ Khi trả lời câu hỏi của user trong vault, AI nên:
 
 ### 6.1. Khi user hỏi câu định tính về dự án (RAG)
 - Dùng slash command `/ask-vault` (file `.claude/skills/ask-vault/SKILL.md`) — Claude Code tự load khi CWD là `My_Project_Vault/`.
-- Nếu gọi LLM ngoài Claude Code, dùng system prompt ở `System/PROMPTS/ask_vault_system.md`.
+- Nếu gọi LLM ngoài Claude Code, dùng system prompt ở `apps/System/PROMPTS/ask_vault_system.md`.
 - Skill phải đọc `MEMORY.md` trước để biết các quyết định đã chốt (ts-morph cho custom AST, CodeGraph cho code-graph overview, …).
 
 ### 6.2. Khi user muốn sinh spec màn hình (Figma + code)
