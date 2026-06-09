@@ -1,0 +1,33 @@
+# Production: KHÔNG build từ source, chỉ pull image đã build sẵn từ registry.
+# Dùng trên EC2:  docker compose -f docker-compose.prod.yml up -d
+services:
+  web:
+    # Image trên GHCR. Override qua biến IMAGE khi cần đổi tag/user.
+    image: ${IMAGE:-ghcr.io/nhatnv2-vnext/my-project-vault:v1}
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+      - WIKI_ROOT_PATH=/wiki
+      - LANCEDB_PATH=/data/lancedb
+    volumes:
+      - ./02_Wiki:/wiki:ro
+      - lancedb_data:/data/lancedb
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  lancedb_data:
