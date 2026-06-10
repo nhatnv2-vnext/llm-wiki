@@ -1,7 +1,6 @@
 # 📚 My Project Vault (LLM Wiki)
 
-Knowledge vault 3 lớp, vận hành bằng AI agents (Claude Code + CodeGraph) và hiển thị trên **Obsidian**.
-Dự án mẫu được áp dụng: **laptop-shop** (NestJS + Prisma + MySQL + Bull/Redis · Angular 21 SSR + NgRx + Tailwind).
+Knowledge vault 3 lớp, vận hành bằng AI agents (Claude Code + CodeGraph) và hiển thị trên **Obsidian** và **Web Next.js**.
 
 ## 🚀 Bắt đầu nhanh
 
@@ -9,71 +8,47 @@ Dự án mẫu được áp dụng: **laptop-shop** (NestJS + Prisma + MySQL + B
 2. Mở file [`02_Wiki/00_Overview/Index.md`](02_Wiki/00_Overview/Index.md) (Map of Content) để có cái nhìn tổng quan.
 3. Đọc [`apps/System/CLAUDE.md`](apps/System/CLAUDE.md) để hiểu triết lý vận hành và quy tắc dành cho AI.
 
-### Cấu hình các công cụ AI (MCP Servers)
+### 🔌 Cấu hình các công cụ AI (MCP Servers)
 
-Để AI (Claude Code) có thể đọc dữ liệu thiết kế, source code và tài liệu, bạn cần hoàn tất các cấu hình sau:
+**MCP (Model Context Protocol)** là các plugin giúp AI có thể tương tác trực tiếp với các hệ thống bên ngoài (đọc Figma, phân tích cấu trúc Code, truy cập Google Drive). Để AI có đầy đủ "siêu năng lực", bạn cần cấu hình các MCP trong file `.mcp.json` (nằm ở thư mục gốc của Vault).
 
-1. **Figma API (Thiếu biến môi trường `FIGMA_API_KEY`):**
+1. **Figma API (Trích xuất giao diện thiết kế):**
    - Lấy token tại: **Figma > Settings > Personal access tokens**.
    - Mở terminal và thêm biến môi trường (vào `~/.zshrc` hoặc `~/.bash_profile`):
      ```bash
      export FIGMA_API_KEY="figd_..."
      ```
-   - *Lưu ý: Không hardcode token vào file `.mcp.json` để tránh rò rỉ bảo mật.*
+   - _Lưu ý: Không nên ghi cứng (hardcode) token vào file `.mcp.json` để tránh rò rỉ bảo mật._
 
-2. **CodeGraph (Knowledge graph của source code):**
-
-   CodeGraph là index AST (tree-sitter) của mã nguồn, giúp các skill `/spec-feature`,
-   `/spec-database`, `/spec-architecture`, `/ask-vault`... lần theo quan hệ gọi
-   (controller → service → repository), tìm callers/callees và impact analysis
-   chính xác hơn grep. **Tùy chọn nhưng nên có** — nếu thiếu, các skill tự fallback
-   sang Read/Grep.
-
-   - Cài CLI (1 lần): `npm i -g @colbymchenry/codegraph` (kiểm tra: `which codegraph`).
-   - **Index phải build TRONG TỪNG thư mục source code** (không phải ở vault).
-     Với mỗi project đã đăng ký ở `projects.json`, vào `local_path` rồi chạy:
+2. **CodeGraph (Phân tích cấu trúc Source Code - Cực kỳ quan trọng):**
+   - CodeGraph giúp AI hiểu được quan hệ gọi hàm (controller → service → repository), tìm callers/callees chính xác hơn nhiều so với việc chỉ tìm kiếm text thông thường.
+   - **Cài đặt CLI (1 lần duy nhất):** 
      ```bash
-     cd /đường_dẫn/tới/source-project   # vd .../code-demo/laptop-shop
-     codegraph init -i                  # tạo thư mục .codegraph/ (chạy 1 lần)
+     npm i -g @colbymchenry/codegraph
      ```
-   - File watcher của CodeGraph tự cập nhật index khi code đổi (~500ms debounce).
-   - Skill truy vấn index của project khác qua tham số `projectPath` (trỏ tới
-     thư mục chứa `.codegraph/`), nên không cần index ở vault root.
-   - Mở `claude` (tương tác), khi được hỏi cấp quyền MCP trong `.mcp.json` → "Approve".
-     Kiểm tra: `claude mcp list` hoặc gõ `/mcp`. Xem trạng thái index: tool
-     `codegraph_status` (hoặc `codegraph status` ở thư mục project).
-
-3. **Google Drive (Yêu cầu xác thực OAuth):**
-   - Lần đầu sử dụng tính năng đọc tài liệu Drive, server sẽ yêu cầu đăng nhập. Hãy theo dõi thông báo trên terminal khi chạy Claude để bấm vào link xác thực.
-
-4. **MarkItDown (bóc tách PDF → Markdown — cho `npm run parse-docs`):**
-
-   > ⚠️ **Chỉ cần trên máy DEV.** `parse-docs` là bước ingest thủ công (giống
-   > `sync-drive`, `ingest`, `code-graph`): chạy local để sinh Markdown trong
-   > `01_Raw/drive_docs/parsed/`, KHÔNG phải runtime của web app. **Server / Docker
-   > KHÔNG cần cài markitdown** — Dockerfile chỉ build `apps/web`.
-
-   - [MarkItDown](https://github.com/microsoft/markitdown) là tool Python của Microsoft, dùng để parse `PRD*.pdf` trong `01_Raw/drive_docs/` thành Markdown.
-   - **macOS** (khuyến nghị dùng pipx để cô lập):
+   - **Cách kích hoạt:** Bạn phải chạy CodeGraph **bên trong TỪNG thư mục mã nguồn** của dự án (KHÔNG phải chạy ở thư mục Vault). 
      ```bash
-     brew install pipx                       # nếu chưa có
-     pipx install 'markitdown[pdf]'          # cài CLI markitdown (vào ~/.local/bin)
+     cd /đường_dẫn/tới/source-project   # vd: /Users/admin/code/my-app
+     codegraph init -i                  # Lệnh này tạo thư mục .codegraph/ (chỉ chạy 1 lần)
      ```
-   - **Linux (Ubuntu/Debian)** — nếu máy dev/WSL của bạn là Linux:
+   - CodeGraph sẽ tự động lắng nghe và cập nhật mỗi khi code của bạn thay đổi. 
+   - *Kiểm tra:* Gõ `/mcp` trong phiên làm việc của Claude để xem MCP CodeGraph đã kết nối chưa.
+
+3. **Google Drive (Đọc tài liệu Yêu cầu / PRD):**
+   - Khi bạn yêu cầu AI đọc tài liệu từ Drive lần đầu tiên, hệ thống sẽ in ra một đường link trên terminal. Hãy click vào link đó để cấp quyền xác thực (OAuth).
+
+4. **MarkItDown (Công cụ bóc tách PDF thành Markdown - Tuỳ chọn):**
+   - Dùng để chạy script `npm run parse-docs` giúp bóc tách text từ file PDF. Chỉ cần cài trên máy tính cá nhân của bạn.
+   - **Cài đặt (macOS / Linux):**
      ```bash
-     sudo apt-get install -y python3-pip pipx
+     brew install pipx
      pipx install 'markitdown[pdf]'
-     # hoặc nếu không có pipx:  pip install --user 'markitdown[pdf]'
      ```
-   - Kiểm tra: `markitdown --help`. Script `parse-docs` tự dò binary ở PATH hoặc `~/.local/bin`; thiếu sẽ báo lỗi kèm hướng dẫn cài.
-   - **OCR (cho PDF nhiều bảng/ảnh/scan):** MarkItDown chỉ bóc *text layer*; chữ nằm trong ảnh sẽ thiếu. `parse-docs` **tự phát hiện PDF có ảnh nhúng và bật OCR** cho file đó (cần Tesseract + poppler):
+   - Nếu PDF của bạn chứa chữ nằm trong ảnh (bảng biểu scan), công cụ sẽ cần thêm thư viện OCR để đọc chữ:
      ```bash
      # macOS
-     brew install tesseract poppler            # + tesseract-lang nếu cần OCR đa ngôn ngữ
-     # Linux (Ubuntu/Debian)
-     sudo apt-get install -y tesseract-ocr poppler-utils   # + tesseract-ocr-vie cho tiếng Việt
+     brew install tesseract poppler
      ```
-     Nếu thiếu 2 tool này, OCR tự bỏ qua (vẫn parse text-layer bình thường). Cờ nâng cao (chạy trực tiếp `node agent_skills/doc_parser_agent.js`): `--no-ocr` (tắt OCR), `--ocr` (ép mọi file), `--lang vie` (đổi ngôn ngữ).
 
 ## 🏗 Cấu trúc 3 lớp (3-Layer Architecture)
 
@@ -84,9 +59,22 @@ My_Project_Vault/
 ├── 01_Raw/                          ← Layer 1: Nguồn thô (READ-ONLY)
 │   ├── codebase/projects.json       ←   Danh sách project + local path
 │   ├── screens/Screens.json         ←   Catalog màn hình + Figma URL
+│   ├── features/Features.json       ←   Catalog tính năng Backend
 │   ├── database/schemas.json        ←   Link đến file schema DB
-│   └── drive_docs/                  ←   Tài liệu từ Google Drive
+│   └── drive_docs/                  ←   Tài liệu từ Google Drive (PRD)
 ├── 02_Wiki/                         ← Layer 2: Tri thức biên dịch (AI ghi vào đây)
+│   ├── 00_Overview/                 ←   Index.md + Vault_Index.json
+│   ├── 01_Business/                 ←   PRD biên dịch + business rules
+│   ├── 02_Design/                   ←   Đặc tả màn hình Figma + code
+│   ├── 03_Architecture/             ←   Sơ đồ C4, sequence, queue/cron
+│   ├── 04_API_Specs/                ←   Hợp đồng API + business logic
+│   ├── 05_Database/                 ←   ERD + Data Dictionary
+│   ├── 06_Code_Graph/               ←   AST skill map từ CodeGraph
+│   ├── 07_Tasks_&_Logs/             ←   Conflict Reports + Sync Logs
+│   ├── 08_ADR/                      ←   Architecture Decision Records (✨ Mới)
+│   ├── 09_Testing/                  ←   Chiến lược kiểm thử + coverage (✨ Mới)
+│   ├── 10_Security/                 ←   Auth/RBAC + API security (✨ Mới)
+│   └── _Templates/                  ←   Template chuẩn cho từng loại tài liệu
 └── apps/
     ├── System/                      ← Layer 3: Bộ não (Scripts, Skills, CLAUDE.md)
     └── web/                         ← App Next.js (RAG UI, graph view)
@@ -103,7 +91,6 @@ Lấy cảm hứng từ phương pháp **context engineering + spec-driven devel
 - **Ghi nhận thay vì tự ý sửa:** Mọi xung đột (conflict) giữa code thực tế và tài liệu đặc tả (PRD) đều được AI phát hiện và log lại tại `02_Wiki/07_Tasks_&_Logs/Conflict_Reports.md`.
 - **Versioning (Archiving):** Khi AI cập nhật một file trong Wiki, nó BẮT BUỘC phải copy/di chuyển phiên bản cũ vào `02_Wiki/_Archive/` để lưu lại lịch sử trước khi ghi đè nội dung mới.
 
-
 ## 🐳 Chạy Web App (Docker)
 
 Web app (`apps/web`) hiển thị Wiki dưới dạng website với tính năng RAG search.
@@ -116,10 +103,10 @@ Web app (`apps/web`) hiển thị Wiki dưới dạng website với tính năng 
 
 ### API RAG
 
-| Endpoint | Mô tả |
-|---|---|
-| `POST /api/search` | Nhận `{ query }` → trả Top-5 chunk liên quan (`text_content` + `file_path`), đã dedupe. |
-| `POST /api/chat` | Nhận `{ query }` → **stream** (SSE) câu trả lời Markdown bám ngữ cảnh wiki, kèm `sources` (file_path) trong message metadata. |
+| Endpoint           | Mô tả                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/search` | Nhận `{ query }` → trả Top-5 chunk liên quan (`text_content` + `file_path`), đã dedupe.                                       |
+| `POST /api/chat`   | Nhận `{ query }` → **stream** (SSE) câu trả lời Markdown bám ngữ cảnh wiki, kèm `sources` (file_path) trong message metadata. |
 
 Cả hai có guardrails: chặn prompt injection / từ độc hại / query quá dài, che
 PII, và từ chối câu hỏi ngoài phạm vi wiki (`outOfScope`). `/api/chat` chỉ trả
@@ -162,6 +149,7 @@ docker compose --env-file .env.production up --build
 ```
 
 **Mỗi lần** container khởi động, `entrypoint.sh` tự động:
+
 1. Chạy ingestion pipeline — đọc toàn bộ `02_Wiki/`, embedding và lưu vào LanceDB
 2. Khởi động Next.js server tại `http://localhost:3000`
 
@@ -169,6 +157,7 @@ Từ lần 2 trở đi, ingestion chỉ re-embed các file đã thay đổi (inc
 
 > **Lưu ý — Docker KHÔNG dùng `npm run build-index`.** Để image runtime gọn và
 > không phụ thuộc `tsx`/pnpm, ingestion được đóng gói khác:
+>
 > - Lúc **build image**: `esbuild` bundle `scripts/ingest-rag.ts` thành
 >   `ingest-rag.mjs`, đặt cùng `node_modules` riêng trong thư mục `/ingest`.
 > - Lúc **container chạy**: `entrypoint.sh` gọi `node /ingest/ingest-rag.mjs`
@@ -237,12 +226,38 @@ npm run stats           # Cập nhật thông số thống kê vào bảng Vault
 
 Vì Vault này được thiết kế như một **bộ khung (template)**, bạn có thể áp dụng cho bất kỳ dự án phần mềm nào (cả Frontend và Backend). Nhờ vào bộ AI Skills tích hợp, quy trình tạo Wiki giờ đây được tự động hóa qua 5 bước:
 
+## 🤖 Bộ AI Skills (`.claude/skills/`)
+
+Vault tích hợp **13 AI skills** kích hoạt qua slash command trong Claude Code:
+
+| Skill               | Trigger                        | Mô tả                                                                                                   | Ghi vào                        |
+| ------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `add-project`       | `/add-project <path>`          | Đăng ký dự án mới, phát hiện tech stack                                                                 | `01_Raw/projects.json`         |
+| `scan-project`      | `/scan-project <name>`         | Quét route/controller → catalog màn hình & API · **Hỗ trợ Angular, Next.js App Router, Nuxt 3, Vue**    | `Screens.json / Features.json` |
+| `plan-wiki`         | `/plan-wiki`                   | Sinh `Index.md` và `WikiState.json` để theo dõi tình trạng tạo tài liệu.                               | `00_Overview/Index.md`         |
+| `check-update`      | `/check-update`                | **Mới:** Phát hiện thay đổi của code và tài liệu, đánh dấu `[~]` những mục bị lỗi thời cần update.      | `WikiState.json` & `Index.md`  |
+| `update-wiki`       | `/update-wiki <ID>`            | **Mới:** Cập nhật thông minh tài liệu cũ dựa trên thay đổi mới, bảo vệ ghi chú thủ công của user.       | `02_Wiki/**/*.md`              |
+| `spec-business`     | `/spec-business <topic>`       | Biên dịch PRD + đối chiếu code → business spec                                                          | `01_Business/`                 |
+| `spec-screen`       | `/spec-screen <ID>`            | 2 sub-agent song song: Figma reader + code reader                                                       | `02_Design/`                   |
+| `spec-architecture` | `/spec-architecture <project>` | Sinh sơ đồ C4 + sequence + queue/cron                                                                   | `03_Architecture/`             |
+| `spec-feature`      | `/spec-feature <ID>`           | **Nâng cấp:** 2 sub-agent song song (code + test), 4 section bắt buộc: Contract/Source/Rules/Edge Cases | `04_API_Specs/`                |
+| `spec-database`     | `/spec-database <name>`        | ERD Mermaid + Data Dictionary từ Prisma/SQL/TypeORM                                                     | `05_Database/`                 |
+| `log-adr`           | `/log-adr <tiêu_đề>`           | **Mới:** Ghi nhận Architecture Decision Record                                                          | `08_ADR/`                      |
+| `cross-link`        | `/cross-link [--dry-run]`      | **Nâng cấp:** Tạo wikilink với guard chống hỏng file, hỗ trợ dry-run                                    | Toàn bộ Wiki                   |
+| `ask-vault`         | `/ask-vault`                   | Tra cứu wiki + code-graph + source code để trả lời câu hỏi về dự án                                     | (read-only)                    |
+| `log-conflict`      | `/log-conflict`                | Ghi nhận xung đột PRD ↔ code (append-only)                                                              | `07_Tasks_&_Logs/`             |
+| `skill-creator`     | meta                           | Tạo và cải thiện skill mới với eval/benchmark                                                           | `.claude/skills/`              |
+
+> **Ghi chú:** Skills đọc `local_path` từ `01_Raw/codebase/projects.json` để truy cập source code — vault không chứa code trực tiếp. Skills ưu tiên **CodeGraph MCP** cho traversal, fallback sang Read/Grep nếu chưa có index.
+
 ### Bước 1: Đăng ký dự án mới (Add Project)
 
 Bạn không cần mở file cấu hình bằng tay. Chỉ cần gọi lệnh và cung cấp đường dẫn thư mục code trên máy của bạn:
+
 ```bash
 /add-project <đường_dẫn_tuyệt_đối_tới_thư_mục_code>
 ```
+
 AI sẽ tự động phân tích đó là dự án Frontend, Backend hay Monorepo và ghi danh nó vào file `01_Raw/codebase/projects.json`.
 
 ### Bước 1b: Build CodeGraph cho source code (khuyến nghị)
@@ -260,31 +275,39 @@ codegraph init -i                        # tạo .codegraph/ trong project (1 l�
 
 > Build index **trong từng thư mục source**, KHÔNG phải ở vault. File watcher tự
 > cập nhật khi code đổi. Skill sẽ tự trỏ tới `.codegraph/` của project qua
-> `projectPath`. Chi tiết: xem mục *"Cấu hình các công cụ AI (MCP Servers) → CodeGraph"* ở đầu README.
+> `projectPath`. Chi tiết: xem mục _"Cấu hình các công cụ AI (MCP Servers) → CodeGraph"_ ở đầu README.
 
 ### Bước 2: Quét Source Code tự động (Scan)
 
 Không cần phải nhập tay danh sách màn hình hay API nữa. Hãy ra lệnh cho AI quét dự án vừa thêm:
+
 ```bash
 /scan-project <tên_project>
 ```
+
 - **Nếu là Frontend:** AI sẽ tự động đọc code, trích xuất cấu trúc Route/Pages và lưu vào file `01_Raw/screens/Screens.json`.
 - **Nếu là Backend:** AI sẽ tìm các Controllers, Handlers, Services và lưu vào `01_Raw/features/Features.json`.
 
 ### Bước 3: Tự động lên Dàn ý (Plan)
 
 Sau khi có dữ liệu thô từ Bước 2, bạn gõ lệnh:
+
 ```bash
 /plan-wiki
 ```
+
 AI sẽ gom nhóm các Màn hình, Tính năng backend và Database Schema để sinh ra file `02_Wiki/Index.md`. Đây chính là "Bản đồ" (Map of Content) của toàn bộ dự án.
 
 ### Bước 4: Sinh tài liệu chi tiết (Spec)
 
 Dựa vào file `Index.md`, bạn có thể ra lệnh cho AI viết tài liệu chi tiết cho từng phần:
+
 - Đối với giao diện Frontend: Gõ `/spec-screen <ID>` (ví dụ: `/spec-screen SCR_001`).
 - Đối với API/Logic Backend: Gõ `/spec-feature <ID>` (ví dụ: `/spec-feature FEA_002`).
 - Database: Gõ `/spec-database <name>` (ví dụ: `/spec-database laptop-shop-db`).
+- Kiến trúc tổng thể: Gõ `/spec-architecture <project>` (ví dụ: `/spec-architecture nestjs-backend`).
+- Nghiệp vụ / PRD: Gõ `/spec-business <topic>` (ví dụ: `/spec-business checkout`).
+- Quyết định kiến trúc: Gõ `/log-adr <tiêu_đề>` (ví dụ: `/log-adr Chọn Redis thay vì WebSocket`).
 
 > 💡 Nếu đã build CodeGraph ở **Bước 1b**, các skill này sẽ dùng index đó để
 > trích call graph / quan hệ service↔bảng chính xác (kèm `file:line`) thay vì đọc mò.
@@ -292,10 +315,28 @@ Dựa vào file `Index.md`, bạn có thể ra lệnh cho AI viết tài liệu 
 ### Bước 5: Liên kết Tri thức (Cross-link)
 
 Cuối cùng, sau khi đã tạo xong nhiều tài liệu, hãy gõ:
+
 ```bash
 /cross-link
 ```
+
 AI sẽ tự động rà soát toàn bộ các file `.md` và tạo ra các Wikilink `[[Liên kết chéo]]` giữa các tính năng, API và Database, biến Wiki thành một mạng lưới tri thức vững chắc.
+
+### Bước 6: Living Documentation (Cập nhật Wiki liên tục)
+
+Dự án phần mềm luôn thay đổi. Thay vì phải tạo lại toàn bộ Wiki mỗi khi có code mới, hệ thống cung cấp cơ chế **Cập nhật tăng dần (Incremental Update)**:
+
+1. Mỗi khi code thay đổi hoặc có tài liệu Yêu cầu mới, hãy gõ:
+   ```bash
+   /check-update
+   ```
+   Hệ thống sẽ quét và nhận diện những Tính năng/Màn hình nào bị lỗi thời so với mã nguồn và đánh dấu chúng bằng ký hiệu `[~]` (needs update) trong `Index.md`.
+
+2. Để cập nhật tài liệu lỗi thời mà **không làm mất các ghi chú thủ công** của bạn trước đó, hãy gõ:
+   ```bash
+   /update-wiki <ID>
+   ```
+   (Ví dụ: `/update-wiki FEA_002`). AI sẽ tự đối chiếu file cũ và dữ liệu mới để bổ sung thông minh!
 
 ## 👥 Hướng dẫn Onboarding nhanh cho Team
 

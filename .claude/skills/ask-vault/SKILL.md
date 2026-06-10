@@ -1,6 +1,6 @@
 ---
 name: ask-vault
-description: Tra cứu wiki trong vault (02_Wiki/) + code-graph (02_Wiki/05_Code_Graph/) + source code (qua local_path trong 01_Raw/codebase/projects.json) để trả lời câu hỏi về dự án. Trigger khi user gõ /ask-vault, hỏi "vault có nói gì về...", "tra cứu wiki...", "module X làm gì", hoặc bất kỳ câu hỏi định tính về kiến trúc, API, schema, flow, module của dự án.
+description: Tra cứu wiki trong vault (02_Wiki/) + code-graph (02_Wiki/06_Code_Graph/) + source code (qua local_path trong 01_Raw/codebase/projects.json) để trả lời câu hỏi về dự án. Trigger khi user gõ /ask-vault, hỏi "vault có nói gì về...", "tra cứu wiki...", "module X làm gì", hoặc bất kỳ câu hỏi định tính về kiến trúc, API, schema, flow, module của dự án.
 ---
 
 # Skill: ask-vault
@@ -9,15 +9,15 @@ Bạn được gọi để trả lời câu hỏi về **dự án** đã đượ
 
 ## Quy tắc 5 bước
 
-1. **Bắt đầu từ map.** Đọc `02_Wiki/00_Dashboard/Index.md` để lấy tổng quan.
-   Nếu file `02_Wiki/00_Dashboard/Vault_Index.json` tồn tại, đọc nó trước — đó là index nhanh (title, headings, links).
+1. **Bắt đầu từ map.** Đọc `02_Wiki/00_Overview/Index.md` để lấy tổng quan.
+   Nếu file `02_Wiki/00_Overview/Vault_Index.json` tồn tại, đọc nó trước — đó là index nhanh (title, headings, links).
 
 2. **Định vị file liên quan.** Dựa vào câu hỏi:
-   - Câu hỏi kiến trúc / flow → `02_Wiki/01_Architecture/`
-   - API endpoint → `02_Wiki/02_API_Specs/`
-   - Bảng / schema → `02_Wiki/03_Database/Schema_Design.md`
-   - Module cụ thể (cấp code) → `02_Wiki/05_Code_Graph/<project>/<area>/SKILL.md`
-   - Phát hiện code lệch spec → `02_Wiki/04_Tasks_&_Logs/Conflict_Reports.md`
+   - Câu hỏi kiến trúc / flow → `02_Wiki/03_Architecture/`
+   - API endpoint → `02_Wiki/04_API_Specs/`
+   - Bảng / schema → `02_Wiki/05_Database/`
+   - Module cụ thể (cấp code) → `02_Wiki/06_Code_Graph/<project>/<area>/SKILL.md`
+   - Phát hiện code lệch spec → `02_Wiki/07_Tasks_&_Logs/Conflict_Reports.md`
 
 3. **Theo wikilink.** Mọi file wiki có section "Liên kết" hoặc link `[[...]]` ở giữa văn bản. Follow chúng để bù ngữ cảnh.
 
