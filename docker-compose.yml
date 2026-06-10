@@ -33,5 +33,37 @@ services:
       retries: 3
       start_period: 15s
 
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: mcp-runner
+    ports:
+      - "${MCP_PORT:-3001}:3001"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+      - WIKI_ROOT_PATH=/wiki
+      - LANCEDB_PATH=/data/lancedb
+    volumes:
+      # Vault read-only — MCP server không bao giờ ghi.
+      - ./02_Wiki:/wiki:ro
+      # Share index với service web (web đã ingest lúc khởi động).
+      - lancedb_data:/data/lancedb:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 volumes:
   lancedb_data:

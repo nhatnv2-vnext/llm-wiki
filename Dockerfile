@@ -9,6 +9,7 @@ RUN corepack enable
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/System/package.json ./apps/System/
+COPY apps/mcp/package.json ./apps/mcp/
 
 # --mount=type=cache giữ pnpm store giữa các lần build → lần 2+ rất nhanh.
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
@@ -60,6 +61,24 @@ RUN mkdir /ingest && \
         --fetch-retries 5 --fetch-retry-maxtimeout 120000 \
         --registry https://registry.npmjs.org
 
+# Compile MCP server (HTTP mode) thành ESM bundle — cùng pattern với /ingest:
+# bundle + node_modules riêng trong /mcp-dist, tách khỏi pnpm virtual store.
+RUN cd apps/mcp && npx esbuild src/http.ts \
+    --bundle \
+    --platform=node \
+    --format=esm \
+    --external:@lancedb/lancedb \
+    --external:apache-arrow \
+    "--external:node:*" \
+    --outfile=dist/mcp.mjs && \
+    mkdir /mcp-dist && \
+    cp dist/mcp.mjs /mcp-dist/mcp.mjs && \
+    cd /mcp-dist && \
+    npm install @lancedb/lancedb \
+        --no-save --no-audit --no-fund \
+        --fetch-retries 5 --fetch-retry-maxtimeout 120000 \
+        --registry https://registry.npmjs.org
+
 # ── Stage 3: runtime image (nhỏ gọn) ───────────────────────────────────────
 FROM node:22-slim AS runner
 WORKDIR /app
@@ -91,3 +110,23 @@ RUN chmod +x /entrypoint.sh
 USER nextjs
 EXPOSE 3000
 CMD ["/entrypoint.sh"]
+
+# ── Stage 4: MCP server (HTTP mode) — target riêng cho service `mcp` ───────
+# Read-only với vault: chỉ đọc /wiki và /data/lancedb (index do service web ghi).
+FROM node:22-slim AS mcp-runner
+WORKDIR /mcp
+
+ENV NODE_ENV=production
+ENV MCP_PORT=3001
+ENV WIKI_ROOT_PATH=/wiki
+ENV LANCEDB_PATH=/data/lancedb
+
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd  --system --uid 1001 --gid nodejs --no-create-home mcp && \
+    mkdir -p /wiki /data/lancedb
+
+COPY --from=builder --chown=mcp:nodejs /mcp-dist /mcp
+
+USER mcp
+EXPOSE 3001
+CMD ["node", "/mcp/mcp.mjs"]

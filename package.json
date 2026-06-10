@@ -9,7 +9,9 @@
     "start": "turbo run start",
     "lint": "turbo run lint",
     "build-index": "pnpm --filter web build-index",
-    "view-index": "pnpm --filter web view-index"
+    "view-index": "pnpm --filter web view-index",
+    "mcp": "pnpm --filter mcp dev",
+    "mcp:http": "pnpm --filter mcp dev:http"
   },
   "devDependencies": {
     "turbo": "^2.9.16"

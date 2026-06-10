@@ -12,6 +12,11 @@
       "type": "stdio",
       "command": "codegraph",
       "args": ["serve", "--mcp"]
+    },
+    "llm-wiki": {
+      "type": "stdio",
+      "command": "node_modules/.bin/tsx",
+      "args": ["apps/mcp/src/stdio.ts"]
     }
   }
 }

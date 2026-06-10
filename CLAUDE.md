@@ -14,7 +14,7 @@ The 3 layers (boundaries are enforced — see "Layer rules"):
 | 2 — Wiki | `02_Wiki/` | READ + WRITE | Compiled knowledge as Markdown, cross-linked with `[[wikilinks]]` |
 | 3 — System | `apps/System/` | READ + WRITE | Automation scripts (the skills' executable backend) |
 
-`apps/web/` is the Next.js RAG site that renders `02_Wiki/` and answers questions over it.
+`apps/web/` is the Next.js RAG site that renders `02_Wiki/` and answers questions over it. `apps/mcp/` is a **read-only MCP server** (stdio + Streamable HTTP) exposing the vault to external AI agents — 6 tools: get_vault_overview, list_wiki, read_page, search_wiki, grep_wiki, get_related. It deliberately duplicates ~150 lines of apps/web's RAG logic (the libs there are `server-only`); keep `apps/mcp/src/config.ts` constants in sync with `apps/web/lib/config.ts` (table name, embedding dim/model, distance threshold). Run: `pnpm mcp` (stdio, registered in `.mcp.json`), `pnpm mcp:http` / `docker compose up mcp` (HTTP :3001). See `apps/mcp/README.md`.
 
 ## Layer rules (critical)
 

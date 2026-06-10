@@ -50,6 +50,18 @@ Knowledge vault 3 lớp, vận hành bằng AI agents (Claude Code + CodeGraph) 
      brew install tesseract poppler
      ```
 
+5. **llm-wiki MCP (Cho AI ở dự án KHÁC đọc Wiki này):**
+   - MCP server read-only trong `apps/mcp/` — AI agents (Claude Code, Cursor) connect vào để tra cứu wiki (semantic search, đọc trang, wikilinks) khi code / lên plan / fix bug ở các repo khác.
+   - Trong repo này: đã đăng ký sẵn trong `.mcp.json` (server `llm-wiki`).
+   - Ở repo khác (local, stdio):
+     ```bash
+     claude mcp add --scope user llm-wiki -- \
+       /đường_dẫn/tới/llm-wiki/node_modules/.bin/tsx \
+       /đường_dẫn/tới/llm-wiki/apps/mcp/src/stdio.ts
+     ```
+   - Deploy EC2 (HTTP): `docker compose up -d mcp` rồi `claude mcp add --transport http llm-wiki http://<host>:3001/mcp`.
+   - Chi tiết: xem `apps/mcp/README.md`.
+
 ## 🏗 Cấu trúc 3 lớp (3-Layer Architecture)
 
 Vault được thiết kế theo nguyên tắc phân tách ranh giới rõ ràng:
@@ -77,6 +89,7 @@ My_Project_Vault/
 │   └── _Templates/                  ←   Template chuẩn cho từng loại tài liệu
 └── apps/
     ├── System/                      ← Layer 3: Bộ não (Scripts, Skills, CLAUDE.md)
+    ├── mcp/                         ← MCP server read-only (AI ngoài đọc wiki)
     └── web/                         ← App Next.js (RAG UI, graph view)
 ```
 

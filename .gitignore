@@ -66,3 +66,4 @@ codegraph.sqlite
 .codegraph/
 # Local AI versioning
 02_Wiki/_Archive/
+dist/
