@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import ChatHistory from "@/components/ChatHistory";
+import LogoutButton from "@/components/LogoutButton";
 import SidebarContent from "@/components/Sidebar";
 import type { WikiNode } from "@/lib/fs-tree";
 
@@ -59,6 +60,8 @@ export default function SidebarTabs({
           <ChatHistory onNavigate={onNavigate} />
         )}
       </div>
+
+      <LogoutButton />
     </div>
   );
 }
