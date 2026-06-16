@@ -27,6 +27,8 @@ apps/web/*.tsbuildinfo
 # Generated files — không commit
 apps/web/scripts/ingest-rag.mjs
 apps/web/.lancedb/
+# SQLite lịch sử chat (local dev) + WAL/SHM
+apps/web/.chat/
 
 # Environment files — chỉ commit .env.example
 .env.local

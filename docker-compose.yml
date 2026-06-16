@@ -13,11 +13,14 @@ services:
       - NODE_ENV=production
       - WIKI_ROOT_PATH=/wiki
       - LANCEDB_PATH=/data/lancedb
+      - CHAT_DB_PATH=/data/chat/history.db
     volumes:
       # 02_Wiki mount read-only — app chỉ đọc, không ghi.
       - ./02_Wiki:/wiki:ro
       # LanceDB data persist giữa các lần restart.
       - lancedb_data:/data/lancedb
+      # Lịch sử chat (SQLite) persist giữa các lần restart.
+      - chat_data:/data/chat
     restart: unless-stopped
     healthcheck:
       # Dùng node thay vì wget — image node:22-slim không có wget.
@@ -35,3 +38,4 @@ services:
 
 volumes:
   lancedb_data:
+  chat_data:

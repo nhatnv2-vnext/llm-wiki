@@ -72,11 +72,12 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV WIKI_ROOT_PATH=/wiki
 ENV LANCEDB_PATH=/data/lancedb
+ENV CHAT_DB_PATH=/data/chat/history.db
 
 RUN groupadd --system --gid 1001 nodejs && \
     useradd  --system --uid 1001 --gid nodejs --no-create-home nextjs && \
-    mkdir -p /wiki /data/lancedb && \
-    chown nextjs:nodejs /data/lancedb
+    mkdir -p /wiki /data/lancedb /data/chat && \
+    chown nextjs:nodejs /data/lancedb /data/chat
 
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static     ./apps/web/.next/static

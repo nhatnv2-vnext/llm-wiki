@@ -2,6 +2,12 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.5"
+  },
+  "volta": {
+    "node": "22.22.3"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -36,7 +42,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@types/bcryptjs": "^3.0.0",
     "@types/mdast": "^4.0.4",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/unist": "^3.0.3",

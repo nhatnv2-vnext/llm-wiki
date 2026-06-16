@@ -52,6 +52,20 @@ function readLanceDbPath(): string {
 /** Đường dẫn tuyệt đối tới thư mục LanceDB. */
 export const LANCEDB_PATH = readLanceDbPath();
 
+/**
+ * Đường dẫn file SQLite lưu lịch sử chat.
+ * Lấy từ CHAT_DB_PATH; mặc định `.chat/history.db` trong thư mục chạy app.
+ * Trong Docker, trỏ vào volume persist (vd /data/chat/history.db).
+ */
+function readChatDbPath(): string {
+  const raw = process.env.CHAT_DB_PATH?.trim();
+  const base = raw && raw !== "" ? raw : ".chat/history.db";
+  return path.resolve(base);
+}
+
+/** Đường dẫn tuyệt đối tới file SQLite lịch sử chat. */
+export const CHAT_DB_PATH = readChatDbPath();
+
 /** Tên bảng chunks dùng cho RAG. */
 export const WIKI_CHUNKS_TABLE = "wiki_chunks";
 
