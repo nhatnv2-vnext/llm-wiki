@@ -1,0 +1,12 @@
+{
+  "name": "llm-wiki",
+  "description": "Engine sinh & bảo trì knowledge vault 3 lớp (01_Raw → 02_Wiki) cho mọi dự án phần mềm: scaffold vault, đăng ký project, sinh spec từ code. Chạy hoàn toàn trong Claude Code, không cần server.",
+  "version": "0.1.0",
+  "author": {
+    "name": "vnext",
+    "email": "captainnhatmoc@gmail.com"
+  },
+  "homepage": "https://github.com/nhatnv2-vnext/llm-wiki",
+  "repository": "https://github.com/nhatnv2-vnext/llm-wiki",
+  "license": "UNLICENSED"
+}
