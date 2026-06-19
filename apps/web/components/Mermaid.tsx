@@ -2,12 +2,17 @@
 
 import { useEffect, useId, useState } from "react";
 
+import { useTheme } from "@/components/ThemeProvider";
+
 /**
  * Render một sơ đồ Mermaid ở phía client.
  * Mermaid thao tác DOM nên phải chạy trong useEffect (không SSR được).
  * Bấm vào sơ đồ -> mở lightbox phóng to (đóng bằng X / Esc / click nền).
  */
 export default function Mermaid({ chart }: { chart: string }) {
+  // Theo theme người dùng chọn (không đọc thẳng prefers-color-scheme nữa) để
+  // sơ đồ đổi màu đồng bộ khi đổi theme trong Settings.
+  const { resolved } = useTheme();
   const rawId = useId();
   // id của mermaid phải hợp lệ làm CSS selector — bỏ ký tự ":".
   const id = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
@@ -20,7 +25,7 @@ export default function Mermaid({ chart }: { chart: string }) {
     (async () => {
       try {
         const mermaid = (await import("mermaid")).default;
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = resolved === "dark";
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "strict",
@@ -56,7 +61,7 @@ export default function Mermaid({ chart }: { chart: string }) {
     return () => {
       cancelled = true;
     };
-  }, [chart, id]);
+  }, [chart, id, resolved]);
 
   // Đóng lightbox bằng Esc + khoá scroll nền khi mở.
   useEffect(() => {
