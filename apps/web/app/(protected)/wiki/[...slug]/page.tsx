@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 
 import BookmarkButton from "@/components/BookmarkButton";
+import FreshnessBadge from "@/components/FreshnessBadge";
 import MarkdownView from "@/components/MarkdownView";
-import { getFileContent } from "@/lib/fs-tree";
+import { getFileContent, getFreshness } from "@/lib/fs-tree";
 
 // Catch-all route cho wiki: /wiki/<slug>. Trong Next 16, `params` là Promise.
 export default async function WikiPage({
@@ -27,9 +28,12 @@ export default async function WikiPage({
   const pageTitle =
     slug.map(decodeURIComponent).pop()?.replace(/\.md$/i, "") ?? wikiSlug;
 
+  const freshness = getFreshness(content);
+
   return (
     <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <FreshnessBadge freshness={freshness} />
         <BookmarkButton slug={wikiSlug} title={pageTitle} />
       </div>
       <MarkdownView content={content} />

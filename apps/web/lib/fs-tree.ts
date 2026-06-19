@@ -192,6 +192,68 @@ export function resolveWikiLink(
   return index.get(base.toLowerCase()) ?? null;
 }
 
+// --- Độ tươi mới của tài liệu (freshness) -----------------------------------
+
+/** Trạng thái độ mới của một trang wiki, suy ra từ front-matter. */
+export type Freshness = {
+  level: "fresh" | "aging" | "stale";
+  /** Ngày last_synced (YYYY-MM-DD) nếu đọc được. */
+  lastSynced: string | null;
+  /** Số ngày kể từ last_synced (null nếu không có ngày hợp lệ). */
+  ageDays: number | null;
+};
+
+/** Ngưỡng (ngày) để coi tài liệu bắt đầu "có tuổi". */
+const AGING_THRESHOLD_DAYS = 30;
+
+/** Đọc một trường vô hướng đơn giản trong front-matter YAML. */
+function readFrontmatterScalar(content: string, key: string): string | null {
+  const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return null;
+  const line = m[1].match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
+  if (!line) return null;
+  return line[1].trim().replace(/^["']|["']$/g, "") || null;
+}
+
+/**
+ * Suy ra độ tươi mới của một trang wiki từ front-matter (`last_synced`,
+ * `status`). Không truy cập source ngoài vault — chỉ dựa vào dữ liệu trong
+ * chính file nên luôn xác định được, không phụ thuộc môi trường.
+ *
+ * - status "stale", hoặc thiếu/không hợp lệ last_synced → "stale".
+ * - last_synced cũ hơn AGING_THRESHOLD_DAYS → "aging".
+ * - còn lại → "fresh".
+ */
+export function getFreshness(content: string): Freshness {
+  const status = readFrontmatterScalar(content, "status")?.toLowerCase() ?? "";
+  const lastSyncedRaw = readFrontmatterScalar(content, "last_synced");
+
+  // Chỉ nhận ngày dạng YYYY-MM-DD; placeholder template ("<YYYY-MM-DD>", v.v.)
+  // sẽ không khớp → coi như không có ngày.
+  const validDate =
+    lastSyncedRaw && /^\d{4}-\d{2}-\d{2}$/.test(lastSyncedRaw)
+      ? lastSyncedRaw
+      : null;
+
+  if (!validDate) {
+    return { level: "stale", lastSynced: lastSyncedRaw, ageDays: null };
+  }
+
+  const synced = new Date(`${validDate}T00:00:00`).getTime();
+  const ageDays = Math.max(
+    0,
+    Math.floor((Date.now() - synced) / (1000 * 60 * 60 * 24)),
+  );
+
+  // status đánh dấu "stale" thì luôn ưu tiên cảnh báo.
+  if (status.includes("stale")) {
+    return { level: "stale", lastSynced: validDate, ageDays };
+  }
+
+  const level = ageDays > AGING_THRESHOLD_DAYS ? "aging" : "fresh";
+  return { level, lastSynced: validDate, ageDays };
+}
+
 // --- Đọc nội dung file (chống path traversal) -------------------------------
 
 /**
