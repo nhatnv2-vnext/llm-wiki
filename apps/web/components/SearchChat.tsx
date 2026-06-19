@@ -61,16 +61,27 @@ export default function SearchChat() {
   // dính nhịp re-render của state).
   const currentIdRef = useRef<string | null>(null);
 
-  // Khi activeId đổi (mở từ sidebar / gợi ý) và KHÁC cái đang hiển thị → nạp lại.
+  // Khi activeId đổi (mở từ sidebar / gợi ý) → nạp messages của hội thoại đó.
+  // Messages được lazy-load từ server nên có thể rỗng ở lượt render đầu rồi mới
+  // về sau; ta theo dõi cả activeConversation.messages để cập nhật khi nó tới.
   useEffect(() => {
-    if (activeId && activeId !== currentIdRef.current) {
+    if (!activeId) return;
+    // Đổi hội thoại → cập nhật ref + nạp messages hiện có (có thể rỗng tạm thời).
+    if (activeId !== currentIdRef.current) {
       currentIdRef.current = activeId;
       setMessages((activeConversation?.messages ?? []) as UIMessage[]);
+      return;
     }
-    if (!activeId && currentIdRef.current === null) {
-      // chưa có hội thoại nào — giữ khung rỗng
+    // Vẫn cùng hội thoại nhưng messages vừa được lazy-load xong (khung đang rỗng,
+    // server trả về có nội dung) → đổ vào khung. KHÔNG ghi đè khi đang chat (busy).
+    if (
+      !isBusy &&
+      messages.length === 0 &&
+      (activeConversation?.messages?.length ?? 0) > 0
+    ) {
+      setMessages(activeConversation!.messages as UIMessage[]);
     }
-  }, [activeId, activeConversation, setMessages]);
+  }, [activeId, activeConversation, isBusy, messages.length, setMessages]);
 
   // Lưu lại hội thoại mỗi khi stream xong (status ready và có messages).
   useEffect(() => {

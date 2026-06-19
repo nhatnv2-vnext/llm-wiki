@@ -148,6 +148,46 @@ LANCEDB_PATH=.lancedb
 > Env khai báo ở **một nơi duy nhất**: `.env.local` ở gốc monorepo. Compose,
 > local dev và script ingest đều đọc chung file này.
 
+#### Đăng nhập: `SESSION_SECRET` + `AUTH_USERS`
+
+Web app yêu cầu đăng nhập (email + mật khẩu). Cần thêm 2 biến vào `.env.local`.
+
+**1. `SESSION_SECRET`** — khóa ký JWT phiên (chuỗi ngẫu nhiên ≥ 32 ký tự):
+
+```bash
+openssl rand -base64 32
+```
+
+Dán kết quả vào `.env.local`:
+
+```env
+SESSION_SECRET=<chuỗi-openssl-vừa-sinh>
+```
+
+**2. `AUTH_USERS`** — danh sách user, mỗi user là cặp `email:bcryptHash`. Sinh
+hash mật khẩu bằng script (không lưu mật khẩu dạng plaintext):
+
+```bash
+cd apps/web
+npm run hash-password -- 'mat-khau-cua-ban' email@example.com
+# hoặc chạy không tham số để nhập mật khẩu tương tác (ẩn ký tự):
+npm run hash-password
+```
+
+Script in ra dòng `email:hash` — dán vào `.env.local`. Nhiều user thì nối các
+cặp bằng **dấu phẩy** trên cùng một dòng:
+
+```env
+AUTH_USERS=admin@example.com:$2b$10$abc...,user2@example.com:$2b$10$xyz...
+```
+
+> ⚠️ Hash bcrypt chứa ký tự `$`. Khi **dán vào `.env.local`** để nguyên (không
+> bọc nháy). Khi truyền mật khẩu qua shell ở lệnh `hash-password`, bọc **nháy
+> đơn** `'...'` để shell không nội suy `$`.
+>
+> Sửa `.env.local` xong phải **restart** dev server / `docker compose restart`
+> để nạp lại env.
+
 ### Chạy
 
 ```bash
