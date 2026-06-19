@@ -20,6 +20,7 @@ import { CHAT_DB_PATH } from "@/lib/config";
  * Schema:
  *   conversations(id, user_email, title, created_at, updated_at)
  *   messages(id, conversation_id, ord, role, parts_json, metadata_json)
+ *   message_feedback(conversation_id, message_id, user_email, rating, created_at)
  * messages.ord giữ đúng thứ tự; xoá hội thoại cascade xoá messages.
  */
 
@@ -67,6 +68,17 @@ function getDb(): DatabaseSync {
     );
     CREATE INDEX IF NOT EXISTS idx_msg_conv
       ON messages (conversation_id, ord);
+
+    CREATE TABLE IF NOT EXISTS message_feedback (
+      conversation_id TEXT NOT NULL,
+      message_id      TEXT NOT NULL,
+      user_email      TEXT NOT NULL,
+      rating          INTEGER NOT NULL,
+      created_at      INTEGER NOT NULL,
+      PRIMARY KEY (user_email, conversation_id, message_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_feedback_conv
+      ON message_feedback (conversation_id);
   `);
 
   return db;
@@ -219,4 +231,74 @@ export function deleteConversation(userEmail: string, id: string): void {
   getDb()
     .prepare(`DELETE FROM conversations WHERE id = ? AND user_email = ?`)
     .run(id, userEmail);
+}
+
+/** Đánh giá: 1 = 👍, -1 = 👎. */
+export type FeedbackRating = 1 | -1;
+
+/**
+ * Ghi/cập nhật đánh giá của user cho một message assistant. Bấm lại cùng rating
+ * → gỡ (toggle off). Trả về rating hiện tại sau thao tác (0 = đã gỡ).
+ *
+ * `messageId` là id phía client của useChat (ổn định trong một hội thoại đã
+ * lưu), không phải PK nội bộ của bảng messages.
+ */
+export function setFeedback(
+  userEmail: string,
+  conversationId: string,
+  messageId: string,
+  rating: FeedbackRating,
+): FeedbackRating | 0 {
+  const conn = getDb();
+  const current = conn
+    .prepare(
+      `SELECT rating FROM message_feedback
+        WHERE user_email = ? AND conversation_id = ? AND message_id = ?`,
+    )
+    .get(userEmail, conversationId, messageId) as
+    | { rating: number }
+    | undefined;
+
+  // Bấm lại đúng rating đang có → gỡ đánh giá.
+  if (current && current.rating === rating) {
+    conn
+      .prepare(
+        `DELETE FROM message_feedback
+          WHERE user_email = ? AND conversation_id = ? AND message_id = ?`,
+      )
+      .run(userEmail, conversationId, messageId);
+    return 0;
+  }
+
+  conn
+    .prepare(
+      `INSERT INTO message_feedback
+         (conversation_id, message_id, user_email, rating, created_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (user_email, conversation_id, message_id)
+       DO UPDATE SET rating = excluded.rating, created_at = excluded.created_at`,
+    )
+    .run(conversationId, messageId, userEmail, rating, Date.now());
+
+  return rating;
+}
+
+/** Lấy toàn bộ đánh giá của user trong một hội thoại: { messageId: rating }. */
+export function getFeedbackForConversation(
+  userEmail: string,
+  conversationId: string,
+): Record<string, FeedbackRating> {
+  const rows = getDb()
+    .prepare(
+      `SELECT message_id, rating FROM message_feedback
+        WHERE user_email = ? AND conversation_id = ?`,
+    )
+    .all(userEmail, conversationId) as Array<{
+    message_id: string;
+    rating: number;
+  }>;
+
+  const out: Record<string, FeedbackRating> = {};
+  for (const r of rows) out[r.message_id] = r.rating as FeedbackRating;
+  return out;
 }
