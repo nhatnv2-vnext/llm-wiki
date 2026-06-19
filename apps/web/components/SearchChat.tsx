@@ -12,6 +12,14 @@ import Sources from "@/components/Sources";
 /** Metadata kèm theo message assistant từ /api/chat. */
 type ChatMetadata = { sources?: string[]; outOfScope?: boolean };
 
+/** Câu hỏi gợi ý ở màn hình trống — giúp người mới biết hỏi gì. */
+const SUGGESTED_QUESTIONS = [
+  "Hệ thống có những tính năng chính nào?",
+  "Luồng đặt hàng (checkout) hoạt động ra sao?",
+  "Cơ sở dữ liệu có những bảng nào quan trọng?",
+  "Kiến trúc tổng thể của dự án thế nào?",
+];
+
 /** Ghép text từ các part của một message. */
 function messageText(message: { parts: Array<{ type: string; text?: string }> }): string {
   return message.parts
@@ -121,19 +129,24 @@ export default function SearchChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, messages]);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const q = input.trim();
-    if (!q || isBusy) return;
+  /** Gửi một câu hỏi (dùng chung cho ô nhập và chip gợi ý). */
+  function ask(q: string) {
+    const text = q.trim();
+    if (!text || isBusy) return;
     // Chưa có hội thoại đang mở → tạo id mới (chỉ đặt ref + active, KHÔNG remount
     // useChat) rồi gửi ngay trong cùng lượt — message không bị mất.
     if (!currentIdRef.current) {
       const id = newConversation();
       currentIdRef.current = id;
     }
-    sendMessage({ text: q });
+    sendMessage({ text });
     setInput("");
     setShowSuggestions(false);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    ask(input);
   }
 
   /** Bắt đầu hội thoại mới (xoá khung chat hiện tại, không xoá lịch sử). */
@@ -217,11 +230,26 @@ export default function SearchChat() {
         </div>
       </form>
 
-      {/* Empty state */}
+      {/* Empty state + chip câu hỏi gợi ý */}
       {!hasMessages && !error && (
-        <p className="text-center text-sm text-muted">
-          Nhập câu hỏi để AI trả lời dựa trên nội dung wiki, kèm nguồn tham khảo.
-        </p>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-center text-sm text-muted">
+            Nhập câu hỏi để AI trả lời dựa trên nội dung wiki, kèm nguồn tham khảo.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {SUGGESTED_QUESTIONS.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => ask(q)}
+                disabled={isBusy}
+                className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Error state */}

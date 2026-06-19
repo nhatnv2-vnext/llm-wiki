@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import BookmarkButton from "@/components/BookmarkButton";
 import MarkdownView from "@/components/MarkdownView";
 import { getFileContent } from "@/lib/fs-tree";
 
@@ -22,8 +23,15 @@ export default async function WikiPage({
 
   if (content === null) notFound();
 
+  // Tiêu đề ngắn cho bookmark: segment cuối của slug, bỏ phần mở rộng .md.
+  const pageTitle =
+    slug.map(decodeURIComponent).pop()?.replace(/\.md$/i, "") ?? wikiSlug;
+
   return (
     <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
+      <div className="mb-6 flex justify-end">
+        <BookmarkButton slug={wikiSlug} title={pageTitle} />
+      </div>
       <MarkdownView content={content} />
     </article>
   );

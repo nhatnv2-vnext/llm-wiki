@@ -79,6 +79,16 @@ function getDb(): DatabaseSync {
     );
     CREATE INDEX IF NOT EXISTS idx_feedback_conv
       ON message_feedback (conversation_id);
+
+    CREATE TABLE IF NOT EXISTS bookmarks (
+      user_email TEXT NOT NULL,
+      slug       TEXT NOT NULL,
+      title      TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (user_email, slug)
+    );
+    CREATE INDEX IF NOT EXISTS idx_bookmark_user_created
+      ON bookmarks (user_email, created_at DESC);
   `);
 
   return db;
@@ -301,4 +311,70 @@ export function getFeedbackForConversation(
   const out: Record<string, FeedbackRating> = {};
   for (const r of rows) out[r.message_id] = r.rating as FeedbackRating;
   return out;
+}
+
+/** Một trang wiki đã lưu (bookmark). `slug` chính là đường dẫn /wiki/<slug>. */
+export type Bookmark = {
+  slug: string;
+  title: string;
+  createdAt: number;
+};
+
+/** Liệt kê bookmark của user, mới nhất trước. */
+export function listBookmarks(userEmail: string): Bookmark[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT slug, title, created_at
+         FROM bookmarks
+        WHERE user_email = ?
+        ORDER BY created_at DESC`,
+    )
+    .all(userEmail) as Array<{
+    slug: string;
+    title: string;
+    created_at: number;
+  }>;
+
+  return rows.map((r) => ({
+    slug: r.slug,
+    title: r.title,
+    createdAt: r.created_at,
+  }));
+}
+
+/**
+ * Bật/tắt bookmark cho một trang. Trả về trạng thái sau thao tác
+ * (true = đang được lưu).
+ */
+export function toggleBookmark(
+  userEmail: string,
+  slug: string,
+  title: string,
+): boolean {
+  const conn = getDb();
+  const existing = conn
+    .prepare(`SELECT 1 FROM bookmarks WHERE user_email = ? AND slug = ?`)
+    .get(userEmail, slug);
+
+  if (existing) {
+    conn
+      .prepare(`DELETE FROM bookmarks WHERE user_email = ? AND slug = ?`)
+      .run(userEmail, slug);
+    return false;
+  }
+
+  conn
+    .prepare(
+      `INSERT INTO bookmarks (user_email, slug, title, created_at)
+       VALUES (?, ?, ?, ?)`,
+    )
+    .run(userEmail, slug, title, Date.now());
+  return true;
+}
+
+/** Kiểm tra một trang đã được user bookmark chưa. */
+export function isBookmarked(userEmail: string, slug: string): boolean {
+  return !!getDb()
+    .prepare(`SELECT 1 FROM bookmarks WHERE user_email = ? AND slug = ?`)
+    .get(userEmail, slug);
 }

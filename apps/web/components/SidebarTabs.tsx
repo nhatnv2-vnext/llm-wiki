@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 
+import Bookmarks from "@/components/Bookmarks";
 import ChatHistory from "@/components/ChatHistory";
 import LogoutButton from "@/components/LogoutButton";
 import SidebarContent from "@/components/Sidebar";
 import type { WikiNode } from "@/lib/fs-tree";
 
 /**
- * Sidebar 2 tab:
+ * Sidebar 3 tab:
  *  - "Wiki": cây thư mục wiki (SidebarContent hiện có).
  *  - "Lịch sử": danh sách hội thoại chat đã lưu.
+ *  - "Đã lưu": các trang wiki đã bookmark.
  */
 export default function SidebarTabs({
   tree,
@@ -22,7 +24,7 @@ export default function SidebarTabs({
   /** Nút phụ render bên phải thanh tab (vd nút thu gọn sidebar trên desktop). */
   headerAction?: React.ReactNode;
 }) {
-  const [tab, setTab] = useState<"wiki" | "history">("wiki");
+  const [tab, setTab] = useState<"wiki" | "history" | "saved">("wiki");
 
   const tabClass = (active: boolean) =>
     `px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -48,6 +50,13 @@ export default function SidebarTabs({
         >
           Lịch sử chat
         </button>
+        <button
+          type="button"
+          onClick={() => setTab("saved")}
+          className={tabClass(tab === "saved")}
+        >
+          Đã lưu
+        </button>
         {headerAction && (
           <div className="ml-auto flex items-center pr-1">{headerAction}</div>
         )}
@@ -56,8 +65,10 @@ export default function SidebarTabs({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tab === "wiki" ? (
           <SidebarContent tree={tree} onNavigate={onNavigate} />
-        ) : (
+        ) : tab === "history" ? (
           <ChatHistory onNavigate={onNavigate} />
+        ) : (
+          <Bookmarks onNavigate={onNavigate} />
         )}
       </div>
 
