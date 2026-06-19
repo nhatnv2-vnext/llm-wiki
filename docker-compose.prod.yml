@@ -29,5 +29,33 @@ services:
       retries: 3
       start_period: 15s
 
+  mcp:
+    # Image MCP server (build target mcp-runner). Override qua biến MCP_IMAGE.
+    image: ${MCP_IMAGE:-ghcr.io/nhatnv2-vnext/my-project-vault-mcp:v1}
+    ports:
+      - "${MCP_PORT:-3001}:3001"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+      - WIKI_ROOT_PATH=/wiki
+      - LANCEDB_PATH=/data/lancedb
+    volumes:
+      - ./02_Wiki:/wiki:ro
+      - lancedb_data:/data/lancedb:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 volumes:
   lancedb_data:
