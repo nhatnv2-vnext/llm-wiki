@@ -5,6 +5,7 @@
   "description": "Knowledge vault — Layer 3 automation triggers (ingest, sync, lint, generate)",
   "scripts": {
     "dev": "echo \"System has no dev server\"",
+    "onboard": "node agent_skills/setup.js",
     "ingest": "node agent_skills/ingest_codebase.js",
     "sync-drive": "bash agent_skills/sync_drive.sh && npm run archive-prd",
     "archive-prd": "node agent_skills/archive_prd.js",
@@ -18,7 +19,7 @@
     "stats": "node agent_skills/vault_stats.js",
     "validate": "npm run lint-specs && npm run audit-links && echo 'Vault integrity OK'"
   },
-  "keywords": ["obsidian", "claude-code", "ts-morph", "knowledge-vault"],
+  "keywords": ["claude-code", "ts-morph", "knowledge-vault", "rag"],
   "author": "captainnhatmoc@gmail.com",
   "license": "UNLICENSED",
   "dependencies": {

@@ -6,10 +6,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import ChatMarkdown from "@/components/ChatMarkdown";
 import { useChatHistory } from "@/components/ChatHistoryProvider";
+import FeedbackButtons from "@/components/FeedbackButtons";
 import Sources from "@/components/Sources";
 
 /** Metadata kèm theo message assistant từ /api/chat. */
 type ChatMetadata = { sources?: string[]; outOfScope?: boolean };
+
+/** Câu hỏi gợi ý ở màn hình trống — giúp người mới biết hỏi gì. */
+const SUGGESTED_QUESTIONS = [
+  "Hệ thống có những tính năng chính nào?",
+  "Luồng đặt hàng (checkout) hoạt động ra sao?",
+  "Cơ sở dữ liệu có những bảng nào quan trọng?",
+  "Kiến trúc tổng thể của dự án thế nào?",
+];
 
 /** Ghép text từ các part của một message. */
 function messageText(message: { parts: Array<{ type: string; text?: string }> }): string {
@@ -30,6 +39,8 @@ export default function SearchChat() {
 
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  // Đánh giá đã lưu cho hội thoại đang mở: { messageId: 1 | -1 }.
+  const [feedback, setFeedback] = useState<Record<string, 1 | -1>>({});
 
   // Hội thoại đang mở (nếu có) để khôi phục messages.
   const activeConversation = useMemo(
@@ -83,6 +94,31 @@ export default function SearchChat() {
     }
   }, [activeId, activeConversation, isBusy, messages.length, setMessages]);
 
+  // Nạp đánh giá đã lưu của hội thoại đang mở (để tô đậm nút đã bấm trước đó).
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeId) {
+      // Không có hội thoại → dọn đánh giá (async để tránh setState đồng bộ trong effect).
+      Promise.resolve().then(() => {
+        if (!cancelled) setFeedback({});
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    fetch(`/api/feedback?conversationId=${encodeURIComponent(activeId)}`)
+      .then((r) => (r.ok ? r.json() : { feedback: {} }))
+      .then((d: { feedback?: Record<string, 1 | -1> }) => {
+        if (!cancelled) setFeedback(d.feedback ?? {});
+      })
+      .catch(() => {
+        if (!cancelled) setFeedback({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId]);
+
   // Lưu lại hội thoại mỗi khi stream xong (status ready và có messages).
   useEffect(() => {
     const id = currentIdRef.current;
@@ -93,19 +129,24 @@ export default function SearchChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, messages]);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const q = input.trim();
-    if (!q || isBusy) return;
+  /** Gửi một câu hỏi (dùng chung cho ô nhập và chip gợi ý). */
+  function ask(q: string) {
+    const text = q.trim();
+    if (!text || isBusy) return;
     // Chưa có hội thoại đang mở → tạo id mới (chỉ đặt ref + active, KHÔNG remount
     // useChat) rồi gửi ngay trong cùng lượt — message không bị mất.
     if (!currentIdRef.current) {
       const id = newConversation();
       currentIdRef.current = id;
     }
-    sendMessage({ text: q });
+    sendMessage({ text });
     setInput("");
     setShowSuggestions(false);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    ask(input);
   }
 
   /** Bắt đầu hội thoại mới (xoá khung chat hiện tại, không xoá lịch sử). */
@@ -189,11 +230,26 @@ export default function SearchChat() {
         </div>
       </form>
 
-      {/* Empty state */}
+      {/* Empty state + chip câu hỏi gợi ý */}
       {!hasMessages && !error && (
-        <p className="text-center text-sm text-muted">
-          Nhập câu hỏi để AI trả lời dựa trên nội dung wiki, kèm nguồn tham khảo.
-        </p>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-center text-sm text-muted">
+            Nhập câu hỏi để AI trả lời dựa trên nội dung wiki, kèm nguồn tham khảo.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {SUGGESTED_QUESTIONS.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => ask(q)}
+                disabled={isBusy}
+                className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Error state */}
@@ -205,7 +261,7 @@ export default function SearchChat() {
 
       {/* Hội thoại */}
       <div className="flex flex-col gap-6">
-        {messages.map((message) => {
+        {messages.map((message, index) => {
           if (message.role === "user") {
             return (
               <div key={message.id} className="flex justify-end">
@@ -218,6 +274,10 @@ export default function SearchChat() {
 
           const meta = message.metadata as ChatMetadata | undefined;
           const text = messageText(message);
+          // ID đánh giá phải khớp ID mà chat-db gán khi nạp lại hội thoại
+          // (`${convId}-${ord}`), không dùng message.id runtime của useChat —
+          // nếu không, đánh giá sẽ "mất" sau khi reload hội thoại.
+          const feedbackId = activeId ? `${activeId}-${index}` : null;
           return (
             <div key={message.id} className="flex flex-col">
               <div className="rounded-2xl border border-border bg-surface px-5 py-4">
@@ -229,6 +289,15 @@ export default function SearchChat() {
               </div>
               {meta?.sources && meta.sources.length > 0 && (
                 <Sources sources={meta.sources} />
+              )}
+              {/* Đánh giá: chỉ khi đã có hội thoại được lưu, câu trả lời nằm
+                  trong phạm vi wiki, có nội dung, và không đang stream. */}
+              {activeId && feedbackId && !meta?.outOfScope && text && !isBusy && (
+                <FeedbackButtons
+                  conversationId={activeId}
+                  messageId={feedbackId}
+                  initialRating={feedback[feedbackId] ?? 0}
+                />
               )}
             </div>
           );

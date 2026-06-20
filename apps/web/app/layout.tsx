@@ -3,6 +3,7 @@ import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ChatHistoryProvider } from "@/components/ChatHistoryProvider";
+import { ThemeProvider, ThemeScript } from "@/components/ThemeProvider";
 
 // Theme Anthropic (Streamlit): Space Grotesk cho body + heading, Space Mono cho code.
 const spaceGrotesk = Space_Grotesk({
@@ -18,7 +19,7 @@ const spaceMono = Space_Mono({
 
 export const metadata: Metadata = {
   title: "LLM Wiki",
-  description: "Trình xem wiki cho Obsidian vault",
+  description: "Trình xem wiki cho knowledge vault với tìm kiếm RAG",
 };
 
 /**
@@ -34,15 +35,23 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
+      // data-theme do ThemeScript set trước hydrate → tránh nhấp nháy; bỏ qua
+      // mismatch attribute này khi hydrate.
+      suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${spaceMono.variable} h-full antialiased`}
     >
+      <head>
+        <ThemeScript />
+      </head>
       {/* suppressHydrationWarning: bỏ qua mismatch do extension trình duyệt
           (vd Grammarly chèn data-gr-* vào <body>) — chỉ ở attribute của thẻ này. */}
       <body
         className="min-h-full bg-background text-foreground"
         suppressHydrationWarning
       >
-        <ChatHistoryProvider>{children}</ChatHistoryProvider>
+        <ThemeProvider>
+          <ChatHistoryProvider>{children}</ChatHistoryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -5,7 +5,7 @@
 
 ## Vai trò
 
-Bạn là trợ lý tra cứu trên vault Obsidian. Vault chứa tri thức biên dịch từ source code + tài liệu đặc tả.
+Bạn là trợ lý tra cứu trên vault. Vault chứa tri thức biên dịch từ source code + tài liệu đặc tả.
 Vault được tổ chức 3 lớp:
 
 | Lớp | Đường dẫn | Mục đích |

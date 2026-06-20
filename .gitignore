@@ -43,23 +43,12 @@ apps/web/.chat/
 01_Raw/drive_docs/*
 !01_Raw/drive_docs/.gitkeep
 
-# Obsidian per-user
-.obsidian/workspace*.json
-.obsidian/cache/
-
-# Obsidian plugin binaries — team tự cài qua UI, chỉ commit data.json (settings)
-.obsidian/plugins/*/main.js
-.obsidian/plugins/*/styles.css
-.obsidian/plugins/*/manifest.json
-# (giữ lại data.json để chia sẻ cấu hình)
-!.obsidian/plugins/*/data.json
-
-# File rác Obsidian
-Untitled.base
+# Bỏ qua thư mục Obsidian nếu ai đó vẫn mở vault bằng Obsidian (không track)
+.obsidian/
 Untitled.md
 
 # NOTE: 02_Wiki/05_Code_Graph/ ĐƯỢC commit (theo quyết định team) để
-# người mở Obsidian không cần cài codegraph.
+# cả team xem được mà không cần ai cũng phải cài codegraph.
 
 /.vscode
 

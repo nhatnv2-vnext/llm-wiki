@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Theme do người dùng chọn (dark/light/system) — class-based qua attribute
+   `data-theme` trên <html>. "system" được ThemeProvider resolve sẵn ra
+   light/dark rồi set data-theme tương ứng, nên CSS chỉ cần biết 2 giá trị.
+   `@custom-variant dark` để mọi tiện ích `dark:` của Tailwind v4 bám theo
+   attribute thay vì media query. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* ===== Anthropic theme (theo Streamlit advanced-theming-anthropic) =====
    Light theme: nền kem #f4f3ed, accent nâu-terracotta #bb5a38,
    font Space Grotesk (body + heading), Space Mono cho code. */
@@ -30,15 +37,37 @@
   --font-mono: var(--font-mono), ui-monospace, monospace;
 }
 
+/* Bảng màu dark. QUAN TRỌNG: KHÔNG bọc trong @layer — khối :root ở trên là
+   unlayered, mà trong CSS cascade layers, khai báo unlayered LUÔN thắng khai
+   báo trong layer bất kể specificity. Nếu để dark trong @layer base, biến light
+   của :root sẽ ghi đè và theme không bao giờ đổi. Dùng :root[data-theme="dark"]
+   (specificity cao hơn :root) để chắc chắn thắng. */
+
+/* 1) Người dùng chọn dark tường minh (data-theme="dark" trên <html>). */
+:root[data-theme="dark"] {
+  --background: #21201c; /* nâu-than ấm */
+  --surface: #2b2a25;
+  --surface-muted: #1a1916;
+  --foreground: #eceae1;
+  --muted: #a8a290;
+  --border: #3a382f;
+  --accent: #cd7a5a; /* terracotta sáng hơn cho nền tối */
+  --accent-hover: #d98a6a;
+  --accent-soft: #36281f;
+}
+
+/* 2) Chưa chọn gì (chưa có data-theme) mà hệ điều hành đang dark → theo system.
+   Khi ThemeProvider chạy, nó luôn set data-theme nên nhánh này chỉ là fallback
+   cho lần paint đầu / khi JS chưa kịp chạy. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #21201c; /* nâu-than ấm */
+  :root:not([data-theme]) {
+    --background: #21201c;
     --surface: #2b2a25;
     --surface-muted: #1a1916;
     --foreground: #eceae1;
     --muted: #a8a290;
     --border: #3a382f;
-    --accent: #cd7a5a; /* terracotta sáng hơn cho nền tối */
+    --accent: #cd7a5a;
     --accent-hover: #d98a6a;
     --accent-soft: #36281f;
   }

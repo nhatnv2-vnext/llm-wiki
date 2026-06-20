@@ -81,7 +81,7 @@ Khi được yêu cầu cập nhật wiki từ code:
 
 ---
 
-## 3. Quy Tắc Viết Markdown (Obsidian-flavored)
+## 3. Quy Tắc Viết Markdown (wikilink-flavored)
 
 ### 3.1. Internal links
 - Dùng wikilink `[[Tên File]]` thay vì link đầy đủ.
@@ -131,6 +131,7 @@ Trigger qua `package.json`:
 
 | Lệnh | Tác vụ |
 |------|--------|
+| `pnpm onboard` (root) / `npm run onboard` (trong System) | Onboarding tương tác cho người mới clone: doctor (Node/pnpm/env) + tạo `.env.local` (tự sinh `SESSION_SECRET`, điền `WIKI_ROOT_PATH`) + thêm project vào `projects.json`. Idempotent, không gọi mạng. Tên `onboard` (không phải `setup`) vì `pnpm setup` là built-in của pnpm |
 | `npm run ingest` | Đọc `projects.json` → quét code tại `local_path` (ts-morph) → cập nhật `02_Wiki/` |
 | `npm run sync-drive` | Pull docs mới từ Google Drive → `01_Raw/drive_docs/` (tự chạy `archive-prd` sau đó) |
 | `npm run archive-prd` | Versioning PRD: move bản cũ `PRD_v{N}.pdf` (+ parsed `.md`) vào `01_Raw/drive_docs/archive/`, ghi con trỏ `.current` |

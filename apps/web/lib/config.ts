@@ -21,7 +21,7 @@ function readWikiRootPath(): string {
     throw new Error(
       "Thiếu biến môi trường WIKI_ROOT_PATH. " +
         "Hãy tạo file .env.local (tham khảo .env.example) và trỏ nó tới " +
-        "đường dẫn tuyệt đối của thư mục 02_Wiki trong Obsidian vault.",
+        "đường dẫn tuyệt đối của thư mục 02_Wiki trong vault.",
     );
   }
 

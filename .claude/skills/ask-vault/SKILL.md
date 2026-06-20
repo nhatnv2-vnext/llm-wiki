@@ -5,7 +5,7 @@ description: Tra cứu wiki trong vault (02_Wiki/) + code-graph (02_Wiki/06_Code
 
 # Skill: ask-vault
 
-Bạn được gọi để trả lời câu hỏi về **dự án** đã được index trong vault Obsidian.
+Bạn được gọi để trả lời câu hỏi về **dự án** đã được index trong vault.
 
 ## Quy tắc 5 bước
 

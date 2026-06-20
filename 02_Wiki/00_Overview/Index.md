@@ -15,7 +15,7 @@ tags:
 
 Chào mừng bạn đến với **Knowledge Vault** của dự án. Đây là Bản đồ nội dung (Map of Content - MOC) đóng vai trò là điểm bắt đầu hành trình khám phá kiến thức hệ thống. 
 
-Vault này được vận hành tự động bằng các AI agents phối hợp với **Obsidian** để trực quan hóa kiến thức thông qua liên kết mạng lưới (Wikilinks).
+Vault này được vận hành tự động bằng các AI agents; kiến thức được trực quan hóa qua liên kết mạng lưới (Wikilinks) trên **web app** (graph view tại `/graph`).
 
 ---
 

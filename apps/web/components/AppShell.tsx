@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import SidebarTabs from "@/components/SidebarTabs";
 import type { WikiNode } from "@/lib/fs-tree";
+import type { ProjectInfo } from "@/lib/projects";
 
 /**
  * Khung layout responsive.
@@ -12,9 +13,13 @@ import type { WikiNode } from "@/lib/fs-tree";
  */
 export default function AppShell({
   tree,
+  email,
+  projects,
   children,
 }: {
   tree: WikiNode[];
+  email: string | null;
+  projects: ProjectInfo[];
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -136,6 +141,8 @@ export default function AppShell({
       >
         <SidebarTabs
           tree={tree}
+          email={email}
+          projects={projects}
           headerAction={
             // Nút thu gọn nằm trong thanh tab → không đè lên tab "Lịch sử chat".
             <button
@@ -245,7 +252,12 @@ export default function AppShell({
               </button>
             </div>
             <div className="h-[calc(100%-57px)]">
-              <SidebarTabs tree={tree} onNavigate={() => setOpen(false)} />
+              <SidebarTabs
+                tree={tree}
+                email={email}
+                projects={projects}
+                onNavigate={() => setOpen(false)}
+              />
             </div>
           </div>
         </div>
