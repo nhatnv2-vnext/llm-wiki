@@ -8,6 +8,7 @@
     "build": "turbo run build",
     "start": "turbo run start",
     "lint": "turbo run lint",
+    "onboard": "pnpm --filter my-project-vault onboard",
     "build-index": "pnpm --filter web build-index",
     "view-index": "pnpm --filter web view-index",
     "mcp": "pnpm --filter mcp dev",
