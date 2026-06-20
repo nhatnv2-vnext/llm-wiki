@@ -37,36 +37,39 @@
   --font-mono: var(--font-mono), ui-monospace, monospace;
 }
 
-/* Bảng màu dark — dùng chung cho cả 2 trường hợp bên dưới. */
-@layer base {
-  /* 1) Người dùng chọn dark tường minh (data-theme="dark"). */
-  [data-theme="dark"] {
-    --background: #21201c; /* nâu-than ấm */
+/* Bảng màu dark. QUAN TRỌNG: KHÔNG bọc trong @layer — khối :root ở trên là
+   unlayered, mà trong CSS cascade layers, khai báo unlayered LUÔN thắng khai
+   báo trong layer bất kể specificity. Nếu để dark trong @layer base, biến light
+   của :root sẽ ghi đè và theme không bao giờ đổi. Dùng :root[data-theme="dark"]
+   (specificity cao hơn :root) để chắc chắn thắng. */
+
+/* 1) Người dùng chọn dark tường minh (data-theme="dark" trên <html>). */
+:root[data-theme="dark"] {
+  --background: #21201c; /* nâu-than ấm */
+  --surface: #2b2a25;
+  --surface-muted: #1a1916;
+  --foreground: #eceae1;
+  --muted: #a8a290;
+  --border: #3a382f;
+  --accent: #cd7a5a; /* terracotta sáng hơn cho nền tối */
+  --accent-hover: #d98a6a;
+  --accent-soft: #36281f;
+}
+
+/* 2) Chưa chọn gì (chưa có data-theme) mà hệ điều hành đang dark → theo system.
+   Khi ThemeProvider chạy, nó luôn set data-theme nên nhánh này chỉ là fallback
+   cho lần paint đầu / khi JS chưa kịp chạy. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: #21201c;
     --surface: #2b2a25;
     --surface-muted: #1a1916;
     --foreground: #eceae1;
     --muted: #a8a290;
     --border: #3a382f;
-    --accent: #cd7a5a; /* terracotta sáng hơn cho nền tối */
+    --accent: #cd7a5a;
     --accent-hover: #d98a6a;
     --accent-soft: #36281f;
-  }
-
-  /* 2) Chưa chọn gì (chưa có data-theme) mà hệ điều hành đang dark → theo
-     system. Khi ThemeProvider chạy, nó luôn set data-theme nên nhánh này chỉ
-     là fallback cho lần paint đầu / khi JS chưa kịp chạy. */
-  :root:not([data-theme]) {
-    @media (prefers-color-scheme: dark) {
-      --background: #21201c;
-      --surface: #2b2a25;
-      --surface-muted: #1a1916;
-      --foreground: #eceae1;
-      --muted: #a8a290;
-      --border: #3a382f;
-      --accent: #cd7a5a;
-      --accent-hover: #d98a6a;
-      --accent-soft: #36281f;
-    }
   }
 }
 

@@ -19,7 +19,7 @@ const spaceMono = Space_Mono({
 
 export const metadata: Metadata = {
   title: "LLM Wiki",
-  description: "Trình xem wiki cho Obsidian vault",
+  description: "Trình xem wiki cho knowledge vault với tìm kiếm RAG",
 };
 
 /**
