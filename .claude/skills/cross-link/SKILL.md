@@ -5,9 +5,9 @@ description: Tự động rà soát toàn bộ các file Markdown trong Wiki và
 
 # Skill: cross-link
 
-Bạn được gọi để thực hiện nhiệm vụ **Liên kết Tri thức (Knowledge Graphing)**. Mục tiêu là biến Wiki từ các trang rời rạc thành một mạng lưới liên kết (Obsidian-style wikilinks `[[Link]]`).
+Bạn được gọi để thực hiện nhiệm vụ **Liên kết Tri thức (Knowledge Graphing)**. Mục tiêu là biến Wiki từ các trang rời rạc thành một mạng lưới liên kết (wikilinks `[[Link]]`).
 
-> **Nguyên tắc an toàn:** Cross-link CHỈ thêm liên kết vào text thường. KHÔNG bao giờ thay thế text bên trong: code block (```), inline code (`), frontmatter YAML (---), heading (`#`), hoặc text đã là wikilink (`[[...]]`). Vi phạm nguyên tắc này có thể làm hỏng cấu trúc Obsidian.
+> **Nguyên tắc an toàn:** Cross-link CHỈ thêm liên kết vào text thường. KHÔNG bao giờ thay thế text bên trong: code block (```), inline code (`), frontmatter YAML (---), heading (`#`), hoặc text đã là wikilink (`[[...]]`). Vi phạm nguyên tắc này có thể làm hỏng cấu trúc wiki.
 
 ## Đầu vào
 
@@ -87,14 +87,14 @@ Sau khi ghi file xong, thông báo user:
 - Tạo mới/Cập nhật `<M>` wikilinks trong `<K>` files.
 - Skip: `<S>` thay thế bị bỏ qua (file đích không tồn tại hoặc vùng cấm).
 
-Wiki của bạn giờ đã trở thành một Graph liên kết thực sự! Bạn có thể mở Graph View trong Obsidian để chiêm ngưỡng kết quả.
+Wiki của bạn giờ đã trở thành một Graph liên kết thực sự! Mở graph view trên web app (`/graph`) để chiêm ngưỡng kết quả.
 
 💡 Chạy `npm run audit-links` để verify không có broken link.
 ```
 
 ## Ràng buộc
 
-- **KHÔNG** thay thế trong: code block, inline code, frontmatter, heading, wikilink đã có. Vi phạm sẽ phá vỡ Obsidian rendering.
+- **KHÔNG** thay thế trong: code block, inline code, frontmatter, heading, wikilink đã có. Vi phạm sẽ phá vỡ rendering của wiki.
 - **KHÔNG** tạo self-link (file trỏ về chính nó).
 - **KHÔNG** tạo link tới file không tồn tại.
 - Mỗi keyword chỉ được link **1 lần** mỗi file (đầu tiên xuất hiện).

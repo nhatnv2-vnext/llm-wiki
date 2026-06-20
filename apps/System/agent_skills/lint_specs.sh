@@ -14,7 +14,7 @@ EXIT_CODE=0
 echo "🔍 Linting wiki files in: $WIKI_DIR"
 
 while IFS= read -r -d '' file; do
-  # Bỏ qua output auto-generated và template Obsidian.
+  # Bỏ qua output auto-generated và template.
   case "$file" in
     *"/06_Code_Graph/"* | *"/_Archive/"*) continue ;;
     *"/_Templates/"*) continue ;;

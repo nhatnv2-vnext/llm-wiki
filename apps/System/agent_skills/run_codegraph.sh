@@ -90,7 +90,7 @@ build_area_skill() {
   ctx=$(codegraph context "Explain the $area area: main components, entry points, key symbols" \
     -p "$proj_path" --no-code -n 30 2>&1 || echo "_(context query failed)_")
 
-  # Render markdown với frontmatter Obsidian-friendly
+  # Render markdown với frontmatter chuẩn wiki
   cat > "$out_file" <<EOF
 ---
 name: $area

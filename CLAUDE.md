@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A **3-layer knowledge vault** (LLM Wiki) that turns source code + design docs into a linked, AI-maintained Obsidian wiki, served via a Next.js RAG web app. It is **not** an application codebase — the vault stores *knowledge about other projects*, whose source lives outside the vault and is referenced by `local_path` in JSON catalogs.
+A **3-layer knowledge vault** (LLM Wiki) that turns source code + design docs into a linked, AI-maintained wiki, served via a Next.js RAG web app. It is **not** an application codebase — the vault stores *knowledge about other projects*, whose source lives outside the vault and is referenced by `local_path` in JSON catalogs.
 
 The 3 layers (boundaries are enforced — see "Layer rules"):
 
@@ -79,7 +79,7 @@ Env is declared in **one place**: `.env.local` at the monorepo root (loaded by `
 ## Markdown conventions for `02_Wiki/`
 
 - Every file needs frontmatter: `title`, `type` (architecture|api|schema|task|log|dashboard), `source` (links to Layer-1 paths / `local_path`), `status`, `last_synced`, `tags`.
-- Use `[[Wikilinks]]` liberally (powers Obsidian Graph view and the web graph).
+- Use `[[Wikilinks]]` liberally (powers the web graph view at `/graph`).
 - Mermaid for all diagrams. API-spec files (`04_API_Specs/`) require 4 sections: Contract, Source of truth (`file:line`), Business rule (PRD link), Edge cases & error codes.
 - File names: `Snake_Case_With_Capital.md`; tags: `kebab-case`.
 
