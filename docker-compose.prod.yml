@@ -33,11 +33,16 @@ services:
     # Image MCP server (build target mcp-runner). Override qua biến MCP_IMAGE.
     image: ${MCP_IMAGE:-ghcr.io/nhatnv2-vnext/my-project-vault-mcp:v1}
     ports:
-      - "${MCP_PORT:-3001}:3001"
+      # CHỈ bind loopback của host: MCP (chưa auth) KHÔNG lộ ra internet trên
+      # droplet/EC2. Đặt sau reverse proxy có auth, hoặc chỉ mở MCP_BIND=0.0.0.0
+      # khi đã khóa port 3001 bằng security group/firewall.
+      - "${MCP_BIND:-127.0.0.1}:${MCP_PORT:-3001}:3001"
     env_file:
       - .env.local
     environment:
       - NODE_ENV=production
+      # Lắng nghe mọi interface bên trong container; an toàn nhờ host bind loopback.
+      - MCP_HOST=0.0.0.0
       - WIKI_ROOT_PATH=/wiki
       - LANCEDB_PATH=/data/lancedb
     volumes:

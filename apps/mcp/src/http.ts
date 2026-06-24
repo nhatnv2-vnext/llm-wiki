@@ -9,11 +9,15 @@ import { createServer } from "./server.js";
  * Stateless: mỗi request tạo transport + server mới (không session) —
  * đơn giản, an toàn cho multi-client; client connect tới POST /mcp.
  *
- * LƯU Ý: v1 chưa có auth — khi deploy EC2 hãy giới hạn truy cập bằng
- * security group / VPN. Xem apps/mcp/README.md.
+ * LƯU Ý: v1 chưa có auth. Mặc định CHỈ bind loopback (127.0.0.1) để không lộ
+ * ra ngoài — đặt sau reverse proxy hoặc tunnel. Khi deploy EC2 vẫn phải giới
+ * hạn truy cập bằng security group / VPN. Muốn lắng nghe ngoài, set MCP_HOST
+ * tường minh (vd 0.0.0.0). Xem apps/mcp/README.md.
  */
 
 const PORT = Number(process.env.MCP_PORT ?? process.env.PORT ?? 3001);
+// Mặc định loopback: an toàn-mặc-định, không tự lộ ra interface công khai.
+const HOST = process.env.MCP_HOST?.trim() || "127.0.0.1";
 
 const app = express();
 app.use(express.json({ limit: "4mb" }));
@@ -57,8 +61,8 @@ const methodNotAllowed = (_req: express.Request, res: express.Response) => {
 app.get("/mcp", methodNotAllowed);
 app.delete("/mcp", methodNotAllowed);
 
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   console.error(
-    `[mcp] llm-wiki HTTP server nghe trên :${PORT} (POST /mcp, vault: ${WIKI_ROOT_PATH})`,
+    `[mcp] llm-wiki HTTP server nghe trên ${HOST}:${PORT} (POST /mcp, vault: ${WIKI_ROOT_PATH})`,
   );
 });

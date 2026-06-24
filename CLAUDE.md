@@ -37,7 +37,7 @@ This is a pnpm + Turborepo monorepo (`apps/*`). Node ≥ 20.
 
 **Web app (`apps/web`, the RAG site):**
 ```bash
-turbo run dev            # from root — next dev on :3000
+pnpm dev                 # from root — runs `turbo run dev` (next dev on :3000)
 npm run build-index      # incremental RAG ingest: embed 02_Wiki/ → LanceDB
 npm run build-index -- --force   # full re-index
 npm run view-index       # inspect built index

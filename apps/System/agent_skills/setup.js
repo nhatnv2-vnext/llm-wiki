@@ -288,7 +288,7 @@ async function setupCodeGraph(sourcePath) {
     await addProject();
     console.log(head('Hoàn tất.'));
     console.log('Chạy web app: ' + C.cyan + 'docker compose --env-file .env.local up --build' + C.reset);
-    console.log('Hoặc local:   ' + C.cyan + 'pnpm --filter web build-index && turbo run dev' + C.reset);
+    console.log('Hoặc local:   ' + C.cyan + 'pnpm --filter web build-index && pnpm dev' + C.reset);
   } catch (err) {
     console.error(fail('Lỗi: ' + (err && err.message ? err.message : String(err))));
     process.exitCode = 1;

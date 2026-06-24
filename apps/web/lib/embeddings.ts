@@ -19,11 +19,16 @@ export async function embedQuery(query: string): Promise<number[]> {
   }
 
   const googleKey = readGoogleApiKey();
-  const url = `https://generativelanguage.googleapis.com/v1beta/${EMBED_MODEL}:embedContent?key=${googleKey}`;
+  // Key gửi qua header thay vì query string (?key=): tránh rò vào access/proxy
+  // log — log thường ghi URL nhưng không ghi header.
+  const url = `https://generativelanguage.googleapis.com/v1beta/${EMBED_MODEL}:embedContent`;
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": googleKey,
+    },
     body: JSON.stringify({
       content: { parts: [{ text }] },
       outputDimensionality: EMBEDDING_DIM,
