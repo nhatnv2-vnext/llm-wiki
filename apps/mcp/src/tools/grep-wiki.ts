@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { flattenFiles, getFileContent, getWikiTree } from "../vault.js";
+import { MAX_LINE_LENGTH, compileSafeRegex } from "../safe-regex.js";
 
 const DOUBLE_STAR = "\uFFFF";
 
@@ -37,13 +38,16 @@ export function registerGrepWiki(server: McpServer): void {
       annotations: { readOnlyHint: true },
     },
     async ({ pattern, glob, caseSensitive, maxResults }) => {
+      // Compile an toàn: pattern không hợp lệ → literal; pattern hợp lệ nhưng
+      // có dạng ReDoS (quantifier lồng nhau) → từ chối thay vì để treo server.
       let re: RegExp;
       try {
-        re = new RegExp(pattern, caseSensitive ? "" : "i");
-      } catch {
-        // Pattern không phải regex hợp lệ → tìm như chuỗi nguyên văn.
-        const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        re = new RegExp(escaped, caseSensitive ? "" : "i");
+        re = compileSafeRegex(pattern, caseSensitive ?? false);
+      } catch (err) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: (err as Error).message }],
+        };
       }
 
       const globRe = glob
@@ -63,6 +67,9 @@ export function registerGrepWiki(server: McpServer): void {
         if (!content) continue;
         const fileLines = content.split(/\r?\n/);
         for (let i = 0; i < fileLines.length && total < limit; i++) {
+          // Bỏ qua dòng quá dài: catastrophic backtracking cần input dài mới
+          // bùng nổ — giới hạn này là chốt chặn cuối chống treo event loop.
+          if (fileLines[i].length > MAX_LINE_LENGTH) continue;
           if (re.test(fileLines[i])) {
             lines.push(`${f.slug}.md:${i + 1}: ${fileLines[i].trim()}`);
             total++;

@@ -204,10 +204,15 @@ const EMBED_CONCURRENCY = 5;
 type EmbedContentResponse = { embedding: { values: number[] } };
 
 async function embedOne(text: string, googleKey: string): Promise<number[]> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/${EMBED_MODEL}:embedContent?key=${googleKey}`;
+  // Key gửi qua header thay vì query string: tránh rò vào access/proxy log
+  // (log thường ghi URL nhưng không ghi header). Xem apps/web/lib/embeddings.ts.
+  const url = `https://generativelanguage.googleapis.com/v1beta/${EMBED_MODEL}:embedContent`;
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": googleKey,
+    },
     body: JSON.stringify({
       content: { parts: [{ text }] },
       outputDimensionality: EMBEDDING_DIM,

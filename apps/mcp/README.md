@@ -53,7 +53,13 @@ Client connect:
 claude mcp add --transport http llm-wiki http://<host>:3001/mcp
 ```
 
-> ⚠️ **v1 chưa có auth.** Khi deploy EC2, giới hạn truy cập port 3001 bằng security group / VPN. Có thể thêm bearer token ở `src/http.ts` sau.
+> ⚠️ **v1 chưa có auth.** Server **mặc định chỉ bind loopback**:
+> - Standalone (`pnpm mcp:http`): chỉ lắng nghe `127.0.0.1`. Muốn lắng nghe interface khác, set `MCP_HOST` (vd `MCP_HOST=0.0.0.0`).
+> - Docker: host chỉ publish trên `127.0.0.1:3001` (đổi qua `MCP_BIND`); trong container lắng nghe `0.0.0.0` để Docker forward port.
+>
+> Vì chưa có auth, để truy cập từ xa hãy đặt sau **reverse proxy có auth** hoặc **tunnel/VPN**. Chỉ mở ra ngoài (`MCP_BIND=0.0.0.0`) **sau khi** đã khóa port 3001 bằng security group / firewall. Cân nhắc thêm bearer token ở `src/http.ts`.
+>
+> grep_wiki: pattern do người dùng nhập được kiểm tra chống ReDoS (từ chối quantifier lồng nhau, giới hạn độ dài pattern + độ dài dòng) — xem `src/safe-regex.ts`.
 
 Lưu ý Docker: service `web` chạy ingest lúc khởi động và ghi index vào volume `lancedb_data`; service `mcp` chỉ mount volume đó **read-only** — vì vậy hãy start `web` trước (hoặc cùng lúc) để `search_wiki` có index.
 
